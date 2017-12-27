@@ -1,2 +1,2 @@
 # gdocstr
-Parser for google docstring-style comments
+Parser for google-style docstrings
