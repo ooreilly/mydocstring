@@ -75,7 +75,15 @@ class GoogleDocString(DocString):
         #docstr['returns'] = self.returns('Returns')
         return docstr
 
-    def section(self, keywords=''):
+    def section(self, keywords='Args|Arguments'):
+        """
+        Extracts a section from the docstring.
+
+        Args:
+            keywords (str, optional): This string specifies all aliases for the
+                the section. Each alias is separated by |. Defaults to
+                `'Args|Arguments'`.
+        """
         import warnings
         import textwrap
         docstring = textwrap.dedent(self.docstring).strip()
