@@ -90,15 +90,29 @@ class GoogleDocString(DocString):
 
         # A section starts with `keyword` + delimiter and the contents of the
         # section are indented. The section ends after the indent.
-        pattern = r'(?:%s)%s\n((?:^\s{%s,}.*\n)*)'%(keywords, self.secdelimiter,
-                  self.indent)
-        matches = re.compile(pattern, re.M).findall(docstring)
+        header = re.compile(r'(?:%s)%s\s*'%(keywords, self.secdelimiter))
+        indent = re.compile(r'(^\s{%s,})'%self.indent)
 
-        if not matches:
+        issection = False
+        txt = []
+        for line in docstring.split('\n'):
+            # Add section contents as long as it is indented
+            # or if it is blank
+            if issection:
+                if indent.findall(line) or not line:
+                    txt.append(line)
+                else:
+                    break
+
+            if header.findall(line):
+                issection = True
+
+        if not issection:
             warnings.warn(r'Unable to find section `%s`' %
                           keywords)
             return None
-        return textwrap.dedent(matches[0])
+
+        return textwrap.dedent('\n'.join(txt))
 
     def args(self, keywords='Args|Arguments'):
         """
@@ -123,6 +137,7 @@ class GoogleDocString(DocString):
 
     def returns(self):
         pass
+
 
     def arglist(self, section):
         # Parse arguments
