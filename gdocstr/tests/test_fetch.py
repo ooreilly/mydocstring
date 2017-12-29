@@ -1,31 +1,31 @@
-from .. import docstring 
+from .. import fetch 
 import pytest
 
 def test_get_names():
-    docstring.get_names('test') == ('', 'test', 'function')
-    docstring.get_names('Test') == ('Test', '', 'class')
-    docstring.get_names('Test.test') == ('Test', 'test', 'method')
-    docstring.get_names('') == ('', '', 'module')
+    fetch.get_names('test') == ('', 'test', 'function')
+    fetch.get_names('Test') == ('Test', '', 'class')
+    fetch.get_names('Test.test') == ('Test', 'test', 'method')
+    fetch.get_names('') == ('', '', 'module')
 
 def test_fetch():
     example = 'fixtures/example.py'
-    match = docstring.fetch(example, 'function_with_docstring')
+    match = fetch.fetch(example, 'function_with_docstring')
     assert match['name'] == 'function_with_docstring'
-    assert match['signature'] == '(arg1, arg2)'
+    assert match['signature'] == '(arg1, arg2=True)'
     assert match['dtype'] == 'function'
     
-    match = docstring.fetch(example, 'ExampleOldClass')
+    match = fetch.fetch(example, 'ExampleOldClass')
     assert match['name'] == 'ExampleOldClass'
     assert match['signature'] == ''
     assert match['dtype'] == 'class'
     
-    match = docstring.fetch(example, 'ExampleNewClass')
+    match = fetch.fetch(example, 'ExampleNewClass')
     assert match['name'] == 'ExampleNewClass'
     assert match['signature'] == '(object)'
     assert match['dtype'] == 'class'
 
-    match = docstring.fetch(example, 'ExampleOldClass.__init__')
+    match = fetch.fetch(example, 'ExampleOldClass.__init__')
 
 
-    with pytest.warns(UserWarning) : docstring.fetch(example, 'something')
-    with pytest.raises(ValueError) : docstring.fetch(example, 'something.a.a')
+    with pytest.warns(UserWarning) : fetch.fetch(example, 'something')
+    with pytest.raises(ValueError) : fetch.fetch(example, 'something.a.a')

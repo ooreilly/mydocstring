@@ -104,7 +104,7 @@ class PyFetch(Fetch):
     """
 
     def fetch_function(self):
-        pattern = (r'def\s(%s)(\((?!self)[,\s\w]*\)):\n*\s+"""([\w\W]*?)"""' %
+        pattern = (r'def\s(%s)(\((?!self)[:=,\s\w]*\)):\n*\s+"""([\w\W]*?)"""' %
                    self.funcname)
         return self.find(pattern)
 
@@ -118,7 +118,7 @@ class PyFetch(Fetch):
         # Then check that method signature matches.
         # Finally get the docstring.
         pattern = (r'class\s+%s\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
-                   r'[\n\s]+def\s+(%s)(\(self[\w,\s]*\)):' % self.funcname +
+                   r'[\n\s]+def\s+(%s)(\(self[:=\w,\s]*\)):' % self.funcname +
                    r'[\n\s]+"""([\w\W]*?)"""')
         return self.find(pattern)
 
