@@ -1,6 +1,8 @@
 """
 This module is used to fetch a docstring from source.
 """
+import re
+
 class Fetch(object):
     """
     Base class for fetching docstrings.
@@ -17,6 +19,7 @@ class Fetch(object):
 
         """
         self.txt = txt
+        self.query = query
         self.classname, self.funcname, self.dtype = get_names(query)
 
     def fetch(self):
@@ -35,33 +38,81 @@ class Fetch(object):
 
     def fetch_function(self):
         """
-        override to fetch function docstrings for the specific language.
+        Override this method to fetch function docstrings for the specific
+        language. The functions fetched are module functions. Lamba functions
+        are not fetched.
+
+        Returns:
+            tuple: The function name, function signature, and unparsed docstring.
         """
         pass
     def fetch_class(self):
         """
-        override to fetch class docstrings for the specific language.
+        Override this method to fetch class docstrings for the specific
+        language.
+
+        Returns:
+            tuple: The class name, class signature, and unparsed docstring.
         """
         pass
+
     def fetch_method(self):
         """
-        override to fetch method docstrings for the specific language.
+        Override this method to fetch method docstrings for the specific
+        language.
+
+        Returns:
+            tuple: The method name, method signature, and unparsed docstring.
         """
         pass
+
     def fetch_module(self):
         """
-        override to fetch module docstrings for the specific language.
+        Override this method to fetch module docstrings for the specific
+        language. Module docstrings are defined at the start of a file and are
+        not attached to any block of code.
+
+        Returns:
+            tuple: The class name, class signature, and unparsed docstring.
         """
         pass
+
+    def _get_match(self, pattern):
+        import warnings
+
+        matches = re.compile(pattern, re.M).findall(self.txt)
+        if not matches:
+            warnings.warn(r'Unable to fetch docstring for `%s`' % self.query)
+            return None
+        else:
+            return {'name': matches[0][0],
+                    'signature': matches[0][1],
+                    'docstring': matches[0][2],
+                    'dtype': self.dtype}
 
 class PyFetch(Fetch):
     """
     Base class for fetching docstrings from python source code.
     """
 
+    def fetch_function(self):
+        pattern = (r'def\s(%s)(\((?!self)[,\s\w]*\)):\n*\s+"""([\w\W]*?)"""' %
+                   self.funcname)
+        return self._get_match(pattern)
+
+    def fetch_class(self):
+        pattern = r'(def\s%s\(self\)):\n*\s+"""[\w\W]*?"""'
+        return self._get_match(pattern)
+
+
 def fetch(filestr, query):
     """
-    Fetches a docstring from a source code
+    Fetches a docstring from source.
+
+    Arguments:
+        filestr: A string that specifies filename of the source code to fetch
+            from.
+        query: A string that specifies what type of docstring to fetch.
 
     """
     import os

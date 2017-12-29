@@ -8,10 +8,11 @@ def test_get_names():
     docstring.get_names('') == ('', '', 'module')
 
 def test_fetch():
-    pass
-    match = docstring.fetch('fixtures/example.py', 'function_with_docstring')
+    example = 'fixtures/example.py'
+    match = docstring.fetch(example, 'function_with_docstring')
     assert match['name'] == 'function_with_docstring'
     assert match['signature'] == '(arg1, arg2)'
+    assert match['dtype'] == 'function'
 
-    with pytest.raises(NameError) : docstring.fetch(sample, 'something')
-    with pytest.raises(ValueError) : docstring.fetch(sample, 'a.b.c')
+    with pytest.warns(UserWarning) : docstring.fetch(example, 'something')
+    with pytest.raises(ValueError) : docstring.fetch(example, 'something.a.a')
