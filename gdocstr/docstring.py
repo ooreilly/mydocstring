@@ -42,7 +42,7 @@ class Fetch(object):
         are not fetched.
 
         Returns:
-            tuple: The function name, function signature, and unparsed docstring.
+            A dictionary that matches the description given by `Fetch.find`.
         """
         pass
     def fetch_class(self):
@@ -51,7 +51,7 @@ class Fetch(object):
         language.
 
         Returns:
-            tuple: The class name, class signature, and unparsed docstring.
+            A dictionary that matches the description given by `Fetch.find`.
         """
         pass
 
@@ -61,7 +61,7 @@ class Fetch(object):
         language.
 
         Returns:
-            tuple: The method name, method signature, and unparsed docstring.
+            A dictionary that matches the description given by `Fetch.find`.
         """
         pass
 
@@ -72,11 +72,21 @@ class Fetch(object):
         not attached to any block of code.
 
         Returns:
-            tuple: The class name, class signature, and unparsed docstring.
+            A dictionary that matches the description given by `Fetch.find`.
         """
         pass
 
-    def _get_match(self, pattern):
+    def find(self, pattern):
+        """
+        Performs a search for a docstring that matches a specific pattern.
+
+        Returns:
+            dict: The return type is a dictionary with the following keys:
+                `name` : The name of the function/method.
+                `signature` : the signature of the function/method.
+                `dtype` : What type of construct the docstring is attached to
+                `'module'`, `'class'`, `'method'`, or `'function'`.
+        """
         import warnings
         matches = re.compile(pattern, re.M).findall(self.txt)
         if not matches:
@@ -96,12 +106,12 @@ class PyFetch(Fetch):
     def fetch_function(self):
         pattern = (r'def\s(%s)(\((?!self)[,\s\w]*\)):\n*\s+"""([\w\W]*?)"""' %
                    self.funcname)
-        return self._get_match(pattern)
+        return self.find(pattern)
 
     def fetch_class(self):
         pattern = (r'class\s*(%s)(\(?\w*\)?):\n*\s+"""([\w\W]*?)"""' %
                    self.classname)
-        return self._get_match(pattern)
+        return self.find(pattern)
 
     def fetch_method(self):
         # First check that the class name matches.
@@ -110,7 +120,14 @@ class PyFetch(Fetch):
         pattern = (r'class\s+%s\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
                    r'[\n\s]+def\s+(%s)(\(self[\w,\s]*\)):' % self.funcname +
                    r'[\n\s]+"""([\w\W]*?)"""')
-        return self._get_match(pattern)
+        return self.find(pattern)
+
+    def fetch_module(self):
+        # The module docstring does not have any name and signature,
+        # so skip these.
+        pattern = r'()()^"""([\w\W]*?)"""'
+        return self.find(pattern)
+
 
 def fetch(filestr, query):
     """
