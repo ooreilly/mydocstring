@@ -27,14 +27,13 @@ class Fetch(object):
         Fetches the docstring.
 
         """
-        if self.dtype == 'class':
-            return self.fetch_class()
-        elif self.dtype == 'method':
-            return self.fetch_method()
-        elif self.dtype == 'function':
-            return self.fetch_function()
-        elif self.dtype == 'module':
-            return self.fetch_module()
+
+        types = {'class' : self.fetch_class, 
+                 'method' : self.fetch_method,
+                 'function' : self.fetch_function,
+                 'module' : self.fetch_module}
+
+        return types[self.dtype]()
 
     def fetch_function(self):
         """
@@ -80,7 +79,9 @@ class Fetch(object):
     def _get_match(self, pattern):
         import warnings
 
+        print(pattern)
         matches = re.compile(pattern, re.M).findall(self.txt)
+        print(matches)
         if not matches:
             warnings.warn(r'Unable to fetch docstring for `%s`' % self.query)
             return None
@@ -90,7 +91,7 @@ class Fetch(object):
                     'docstring': matches[0][2],
                     'dtype': self.dtype}
 
-class PyFetch(Fetch):
+class  PyFetch(Fetch):
     """
     Base class for fetching docstrings from python source code.
     """
@@ -101,7 +102,8 @@ class PyFetch(Fetch):
         return self._get_match(pattern)
 
     def fetch_class(self):
-        pattern = r'(def\s%s\(self\)):\n*\s+"""[\w\W]*?"""'
+        pattern = (r'class\s*(%s)(\(?\w*\)?):\n*\s+"""([\w\W]*?)"""' %
+                   self.classname)
         return self._get_match(pattern)
 
 

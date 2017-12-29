@@ -16,3 +16,13 @@ def test_fetch():
 
     with pytest.warns(UserWarning) : docstring.fetch(example, 'something')
     with pytest.raises(ValueError) : docstring.fetch(example, 'something.a.a')
+    
+    match = docstring.fetch(example, 'ExampleOldClass')
+    assert match['name'] == 'ExampleOldClass'
+    assert match['signature'] == ''
+    assert match['dtype'] == 'class'
+    
+    match = docstring.fetch(example, 'ExampleNewClass')
+    assert match['name'] == 'ExampleNewClass'
+    assert match['signature'] == '(object)'
+    assert match['dtype'] == 'class'
