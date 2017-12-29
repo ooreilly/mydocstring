@@ -9,17 +9,58 @@ import re
 class DocString(object):
     """
     This is the base class for parsing docstrings.
+
+    Attributes:
+        argdelimiter : A string that specifies how to separate arguments in a
+            argument list. Defaults to `':'`.
+        secdelimiter : A string that is used to identify a section and is placed
+            after the section name (e.g., `Arguments:`). Defaults to `': '`. 
+        indent : An int that specifies the minimum number of spaces to use for
+            indentation.
+
+
     """
 
     def __init__(self, docstring):
         self.docstring = docstring
+        self.argdelimiter = ': '
+        self.secdelimiter = ':' 
+        self.indent = 2
+
+    def parse(self):
+        """
+        This method should be overloaded and perform the parsing of all
+        sections.
+        """
+        pass
 
     def args(self, keywords=''):
         """
-        This method should be overloaded to specify how to parse argument
-        blocks.
+        This method should be overloaded to specify how to parse the argument
+        section.
         """
         pass
+
+    def returns(self, keywords=''):
+        """
+        This method should be overloaded to specify how to parse the return
+        section.
+        """
+        pass
+
+    def section(self, keywords=''):
+        """
+        This method should be overloaded to specify how to extract a section.
+        """
+        pass
+
+    def arglist(self, keywords=''):
+        """
+        This method should be overloaded to specify how to parse an argument
+        list.
+        """
+        pass
+
 
 class GoogleDocString(DocString):
     """
@@ -28,57 +69,72 @@ class GoogleDocString(DocString):
 
     """
 
+    def parse(self):
+        docstr = {}
+        docstr['args'] = self.args('Args|Arguments')
+        #docstr['returns'] = self.returns('Returns')
+        return docstr
+
+    def section(self, keywords=''):
+        import warnings
+        import textwrap
+        docstring = textwrap.dedent(self.docstring).strip()
+
+        # A section starts with `keyword` + delimiter and the contents of the
+        # section are indented. The section ends after the indent.
+        pattern = r'(?:%s)%s\n((?:^\s{%s,}.*\n)*)'%(keywords, self.secdelimiter,
+                  self.indent)
+        matches = re.compile(pattern, re.M).findall(docstring)
+
+        if not matches:
+            warnings.warn(r'Unable to find section `%s`' %
+                          keywords)
+            return None
+        return textwrap.dedent(matches[0])
+
     def args(self, keywords='Args|Arguments'):
         """
-        Parses an argument block in the docstring.
-
-        This method can be used to parse any block that is formatted as:
-
-        Keyword:
-            arg1 (optional signature): This is a single line description.
-            arg2 : This is an example of description that is too long to fit on
-                a single line. For multiline descriptions to work, each new line
-                must be indented by at least two spaces.
+        Parses the argument list of a section in the docstring.
 
         Args:
             keywords (str, optional): This string specifies all aliases for the
                 block to parse. Each alias is separated by |. Defaults to
                 `'Args|Arguments'`.
 
+        Notes:
+            This method can be used to parse any section that is formatted as:
+
+            Keyword:
+                arg1 (optional signature): This is a single line description.
+                arg2 : This is an example of description that is too long to fit
+                    on a single line. For multiline descriptions to work, each
+                    new line must be indented by at least two spaces.
+
         """
-        import warnings
-        import textwrap
-        docstring = textwrap.dedent(self.docstring).strip()
-        # Get the argument block The argument block ends after a new line, or is
-        # the last part of the docstring.
-        pattern = r'(?:%s):\n([\w\W]*)(?:\n[^.])?'%keywords
-        matches = re.compile(pattern, re.M).findall(docstring)
+        return self.arglist(self.section(keywords))
 
-        if not matches:
-            warnings.warn(r'Unable to find argument list for `%s`' %
-                          self.docstring['query'])
-            return None
-        argblock = textwrap.dedent(matches[0])
+    def returns(self):
+        pass
 
+    def arglist(self, section):
         # Parse arguments
         # The format is `variable (optional signature): description`. The
         # variable and signature is separated from the description using `: `
         # (including space). Space in the separator is needed to to ensure there
         # is no clash with restructured text syntax (e.g., :any:). Multiline
         # line descriptions must be indented using at least two spaces.
-        pattern = r'(\w*)\s*(?:\((.*)\))*\s*:\s(.*\n(?:\s{2,}.*)*)'
-        matches = re.compile(pattern, re.M).findall(argblock)
+        pattern = r'^(\w*)\s*(?:\((.*)\))*\s*:\s(.*\n(?:^\s{2,}.*)*)'
+        matches = re.compile(pattern, re.M).findall(section)
 
         if not matches:
-            raise ValueError('Failed to parse argument block:\n `%s` ' %
-                             (argblock))
+            raise ValueError('Failed to parse argument list:\n `%s` ' %
+                             (section))
 
         argsout = []
         for match in matches:
             argsout.append({'name' : match[0], 'signature' : match[1],
                             'description' : match[2].strip()})
         return argsout
-
 
 def parse(obj, parser=GoogleDocString):
     """
@@ -90,8 +146,7 @@ def parse(obj, parser=GoogleDocString):
             This object is typically obtained by calling the `extract` function.
 
     """
-    docstr = {}
     parser = parser(obj['docstring'])
-    docstr['args'] = parser.args()
+    docstr = parser.parse()
     return docstr
 
