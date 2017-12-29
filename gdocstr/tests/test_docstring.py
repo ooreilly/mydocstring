@@ -13,9 +13,6 @@ def test_fetch():
     assert match['name'] == 'function_with_docstring'
     assert match['signature'] == '(arg1, arg2)'
     assert match['dtype'] == 'function'
-
-    with pytest.warns(UserWarning) : docstring.fetch(example, 'something')
-    with pytest.raises(ValueError) : docstring.fetch(example, 'something.a.a')
     
     match = docstring.fetch(example, 'ExampleOldClass')
     assert match['name'] == 'ExampleOldClass'
@@ -26,3 +23,9 @@ def test_fetch():
     assert match['name'] == 'ExampleNewClass'
     assert match['signature'] == '(object)'
     assert match['dtype'] == 'class'
+
+    match = docstring.fetch(example, 'ExampleOldClass.__init__')
+
+
+    with pytest.warns(UserWarning) : docstring.fetch(example, 'something')
+    with pytest.raises(ValueError) : docstring.fetch(example, 'something.a.a')

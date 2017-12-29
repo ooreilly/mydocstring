@@ -28,7 +28,7 @@ class Fetch(object):
 
         """
 
-        types = {'class' : self.fetch_class, 
+        types = {'class' : self.fetch_class,
                  'method' : self.fetch_method,
                  'function' : self.fetch_function,
                  'module' : self.fetch_module}
@@ -78,10 +78,7 @@ class Fetch(object):
 
     def _get_match(self, pattern):
         import warnings
-
-        print(pattern)
         matches = re.compile(pattern, re.M).findall(self.txt)
-        print(matches)
         if not matches:
             warnings.warn(r'Unable to fetch docstring for `%s`' % self.query)
             return None
@@ -91,7 +88,7 @@ class Fetch(object):
                     'docstring': matches[0][2],
                     'dtype': self.dtype}
 
-class  PyFetch(Fetch):
+class PyFetch(Fetch):
     """
     Base class for fetching docstrings from python source code.
     """
@@ -106,6 +103,14 @@ class  PyFetch(Fetch):
                    self.classname)
         return self._get_match(pattern)
 
+    def fetch_method(self):
+        # First check that the class name matches.
+        # Then check that method signature matches.
+        # Finally get the docstring.
+        pattern = (r'class\s+%s\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
+                   r'[\n\s]+def\s+(%s)(\(self[\w,\s]*\)):' % self.funcname +
+                   r'[\n\s]+"""([\w\W]*?)"""')
+        return self._get_match(pattern)
 
 def fetch(filestr, query):
     """
@@ -169,4 +174,3 @@ def get_names(query):
         raise ValueError('Unable to parse: `%s`' % query)
 
     return (classname, funcname, dtype)
-
