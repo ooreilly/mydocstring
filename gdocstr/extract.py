@@ -1,78 +1,78 @@
 """
-This module is used to fetch a docstring from source.
+This module is used to extract a docstring from source.
 """
 import re
 
-class Fetch(object):
+class Extract(object):
     """
-    Base class for fetching docstrings.
+    Base class for extracting docstrings.
 
     """
 
     def __init__(self, txt, query):
         """
-        Initializer for Fetch.
+        Initializer for Extract.
 
         Arguments:
-            txt: A string that holds the text to fetch docstrings from.
-            query: A string that specifies what type of docstring to fetch.
+            txt: A string that holds the text to extract docstrings from.
+            query: A string that specifies what type of docstring to extract.
 
         """
         self.txt = txt
         self.query = query
         self.classname, self.funcname, self.dtype = get_names(query)
 
-    def fetch(self):
+    def extract(self):
         """
-        Fetches the docstring.
+        Extractes the docstring.
 
         """
 
-        types = {'class' : self.fetch_class,
-                 'method' : self.fetch_method,
-                 'function' : self.fetch_function,
-                 'module' : self.fetch_module}
+        types = {'class' : self.extract_class,
+                 'method' : self.extract_method,
+                 'function' : self.extract_function,
+                 'module' : self.extract_module}
 
         return types[self.dtype]()
 
-    def fetch_function(self):
+    def extract_function(self):
         """
-        Override this method to fetch function docstrings for the specific
-        language. The functions fetched are module functions. Lamba functions
-        are not fetched.
+        Override this method to extract function docstrings for the specific
+        language. The functions extracted are module functions. Lamba functions
+        are not extracted.
 
         Returns:
-            A dictionary that matches the description given by `Fetch.find`.
+            A dictionary that matches the description given by `Extract.find`.
         """
         pass
-    def fetch_class(self):
+    def extract_class(self):
         """
-        Override this method to fetch class docstrings for the specific
+        Override this method to extract class docstrings for the specific
         language.
 
         Returns:
-            A dictionary that matches the description given by `Fetch.find`.
+            A dictionary that matches the description given by `Extract.find`.
         """
         pass
 
-    def fetch_method(self):
+    def extract_method(self):
         """
-        Override this method to fetch method docstrings for the specific
+        Override this method to extract method docstrings for the specific
         language.
 
         Returns:
-            A dictionary that matches the description given by `Fetch.find`.
+            A dictionary that matches the description given by `Extract.find`.
         """
         pass
 
-    def fetch_module(self):
+    def extract_module(self):
         """
-        Override this method to fetch module docstrings for the specific
+        Override this method to extract module docstrings for the specific
         language. Module docstrings are defined at the start of a file and are
         not attached to any block of code.
 
         Returns:
-            A dictionary that matches the description given by `Fetch.find`.
+            A dictionary that matches the description given by `Extract.find`.
         """
         pass
 
@@ -90,7 +90,7 @@ class Fetch(object):
         import warnings
         matches = re.compile(pattern, re.M).findall(self.txt)
         if not matches:
-            warnings.warn(r'Unable to fetch docstring for `%s`' % self.query)
+            warnings.warn(r'Unable to extract docstring for `%s`' % self.query)
             return None
         else:
             return {'name': matches[0][0],
@@ -98,22 +98,22 @@ class Fetch(object):
                     'docstring': matches[0][2],
                     'dtype': self.dtype}
 
-class PyFetch(Fetch):
+class PyExtract(Extract):
     """
-    Base class for fetching docstrings from python source code.
+    Base class for extracting docstrings from python source code.
     """
 
-    def fetch_function(self):
+    def extract_function(self):
         pattern = (r'def\s(%s)(\((?!self)[:=,\s\w]*\)):\n*\s+"""([\w\W]*?)"""' %
                    self.funcname)
         return self.find(pattern)
 
-    def fetch_class(self):
+    def extract_class(self):
         pattern = (r'class\s*(%s)(\(?\w*\)?):\n*\s+"""([\w\W]*?)"""' %
                    self.classname)
         return self.find(pattern)
 
-    def fetch_method(self):
+    def extract_method(self):
         # First check that the class name matches.
         # Then check that method signature matches.
         # Finally get the docstring.
@@ -122,21 +122,21 @@ class PyFetch(Fetch):
                    r'[\n\s]+"""([\w\W]*?)"""')
         return self.find(pattern)
 
-    def fetch_module(self):
+    def extract_module(self):
         # The module docstring does not have any name and signature,
         # so skip these.
         pattern = r'()()^"""([\w\W]*?)"""'
         return self.find(pattern)
 
 
-def fetch(filestr, query):
+def extract(filestr, query):
     """
-    Fetches a docstring from source.
+    Extractes a docstring from source.
 
     Arguments:
-        filestr: A string that specifies filename of the source code to fetch
+        filestr: A string that specifies filename of the source code to extract
             from.
-        query: A string that specifies what type of docstring to fetch.
+        query: A string that specifies what type of docstring to extract.
 
     """
     import os
@@ -146,9 +146,9 @@ def fetch(filestr, query):
     txt = open(filestr).read()
 
     if ext in ['.py']:
-        fetcher = PyFetch(txt, query)
+        extractor = PyExtract(txt, query)
 
-    return fetcher.fetch()
+    return extractor.extract()
 
 
 def get_names(query):
