@@ -1,8 +1,16 @@
 import pytest
 from ..extract import extract
 from .. import parse
-def test_arguments():
 
+def test_section():
+    example = 'fixtures/example.py'
+    match = extract(example, 'function_with_docstring')
+    google = parse.GoogleDocString(match['docstring'])
+    google.section('Args')
+    google.section('Returns')
+    with pytest.warns(UserWarning) : google.section('Not found', require=True)
+
+def test_arguments():
     example = 'fixtures/example.py'
     match = extract(example, 'function_with_docstring')
     docstr = parse.parse(match)
@@ -17,13 +25,6 @@ def test_arguments():
 
     match = extract(example, 'function_with_invalid_argblock')
     with pytest.raises(ValueError) : parse.parse(match)
-
-def test_section():
-    example = 'fixtures/example.py'
-    match = extract(example, 'function_with_docstring')
-    google = parse.GoogleDocString(match['docstring'])
-    google.section('Args')
-    google.section('Returns')
 
 def test_return():
     pass

@@ -75,7 +75,7 @@ class GoogleDocString(DocString):
         #docstr['returns'] = self.returns('Returns')
         return docstr
 
-    def section(self, keywords='Args|Arguments'):
+    def section(self, keywords='Args|Arguments', require=False):
         """
         Extracts a section from the docstring.
 
@@ -83,6 +83,8 @@ class GoogleDocString(DocString):
             keywords (str, optional): This string specifies all aliases for the
                 the section. Each alias is separated by |. Defaults to
                 `'Args|Arguments'`.
+            require (bool, optional): Issue a warning if the section is not
+            found and this section is required. Defaults to False.
         """
         import warnings
         import textwrap
@@ -107,7 +109,7 @@ class GoogleDocString(DocString):
             if header.findall(line):
                 issection = True
 
-        if not issection:
+        if not issection and require:
             warnings.warn(r'Unable to find section `%s`' %
                           keywords)
             return None
