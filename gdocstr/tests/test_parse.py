@@ -15,7 +15,7 @@ def test_arguments():
     match = extract(example, 'function_with_docstring')
     docstr = parse.parse(match)
 
-    args = docstr['args']
+    args = docstr[1]
     args['args'][0]['specifier'] == 'arg1'
     args['args'][0]['signature'] == ['type']
     args['args'][0]['description'] == 'description for arg1'
@@ -32,3 +32,13 @@ def test_parse_section():
     google = parse.GoogleDocString(match['docstring'])
     section = google.extract_section('Args')
     output = google.parse_section(section)
+
+def test_parse_sections():
+    example = 'fixtures/example.py'
+    match = extract(example, 'function_with_docstring')
+    google = parse.GoogleDocString(match['docstring'])
+    sections = google.extract_sections()
+
+def test_summary():
+    test_str = 'This is a test.\n This line is not part of the summary'
+    assert parse.summary(test_str) == 'This is a test.'

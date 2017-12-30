@@ -18,7 +18,6 @@ class DocString(object):
         indent : An int that specifies the minimum number of spaces to use for
             indentation.
 
-
     """
 
     def __init__(self, docstring):
@@ -34,9 +33,9 @@ class DocString(object):
         """
         pass
 
-    def extract_section(self, keywords='', require=False):
+    def extract_sections(self, keywords='', require=False):
         """
-        This method should be overloaded to specify how to extract a section.
+        This method should be overloaded to specify how to extract sections.
         """
         pass
 
@@ -58,17 +57,14 @@ class GoogleDocString(DocString):
     """
     This is the base class for parsing docstrings that are formatted according
     to the Google style guide: .
-
     """
 
     def parse(self):
-        docstr = {}
-        docstr['args'] = self.parse_section('Args|Arguments', require_args=True)
-        docstr['returns'] = self.parse_section('Returns')
-        docstr['yields'] = self.parse_section('Yields')
-        docstr['raises'] = self.parse_section('Raises')
-        docstr['notes'] = self.parse_section('Note|Notes')
-        docstr['examples'] = self.parse_section('Example|Examples')
+        docstr = []
+
+        sections = self.extract_sections()
+        for section in sections:
+            docstr.append(self.parse_section(section))
         return docstr
 
     def extract_section(self, keywords='Args|Arguments', require=False):
@@ -139,14 +135,7 @@ class GoogleDocString(DocString):
         """
         return self.parse_arglist(self.extract_section(keywords), require)
 
-    def parse_section(self, keywords='Returns', require_args=False):
-        section = self.extract_section(keywords)
-        if section:
-            return self.parse_blocks(section, require_args)
-        else:
-            return None
-
-    def parse_blocks(self, section, require_args=False):
+    def parse_section(self, section, require_args=False):
         """
         Parses blocks in a section by searching for an argument list, and
         regular notes. The argument list must be the first block in the section.
@@ -166,7 +155,20 @@ class GoogleDocString(DocString):
 
         """
         import warnings
+        import textwrap
 
+        # Get header
+        lines = section.split('\n')
+        header = self._header().findall(lines[0])
+        if header:
+            header = header[0]
+            # Remove the header from section
+            lines = lines[1:]
+            section = '\n'.join(lines)
+        else:
+            header = ''
+
+        section = textwrap.dedent(section).strip()
         blocks = section.split('\n\n')
 
         args = None
@@ -178,7 +180,44 @@ class GoogleDocString(DocString):
                     text.append(block)
             else:
                 text.append(block)
-        return {'args' : args, 'text' : '\n\n'.join(text)}
+        out = {}
+        if header:
+            out['header'] = header
+        text = '\n\n'.join(text)
+        if text:
+            out['text'] = text
+        if args:
+            out['args'] = args
+        return out
+
+    def extract_sections(self):
+
+        sections = []
+        section = []
+        headerstr = ''
+        header = self._header()
+        indent = self._indent()
+        for line in self.docstring.split('\n'):
+            # Store the header for future use if it is found.
+            # The header will start the section. However,
+            # we do not know from a single line if it is the header or not. We
+            # also need to see the if there is any indent on the next line.
+            if not headerstr and header.findall(line):
+                headerstr = line
+            elif headerstr and indent.findall(line):
+                # Close the previous section
+                sections.append('\n'.join(section))
+                # and start the next one   
+                section = []
+                section.append(headerstr)
+                section.append(line)
+                headerstr = ''
+            elif line:
+                section.append(line)
+        sections.append('\n'.join(section))
+        return sections
+
+
 
     def parse_arglist(self, section, require=False):
         # Parse arguments
@@ -204,6 +243,12 @@ class GoogleDocString(DocString):
                             'description' : sanitize(match[2])})
         return argsout
 
+    def _header(self):
+        return re.compile(r'(\w+)%s\s*'%(self.secdelimiter))
+
+    def _indent(self):
+        return re.compile(r'(^\s{%s,})'%self.indent)
+
 def parse(obj, parser=GoogleDocString):
     """
     Parses a docstring using a parser that matches the formatting of the
@@ -218,10 +263,16 @@ def parse(obj, parser=GoogleDocString):
     docstr = parser.parse()
     return docstr
 
-
 def sanitize(txt):
     """
     Removes indentation and trailing white spaces from a string.
     """
     import textwrap
     return ' '.join([textwrap.dedent(x) for x in txt.split('\n')]).strip()
+
+def summary(txt):
+    """
+    Returns the first line of a string.
+    """
+    lines =  txt.split('\n')
+    return lines[0]
