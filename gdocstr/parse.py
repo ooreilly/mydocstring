@@ -14,7 +14,7 @@ class DocString(object):
         argdelimiter : A string that specifies how to separate arguments in a
             argument list. Defaults to `':'`.
         secdelimiter : A string that is used to identify a section and is placed
-            after the section name (e.g., `Arguments:`). Defaults to `': '`. 
+            after the section name (e.g., `Arguments:`). Defaults to `': '`.
         indent : An int that specifies the minimum number of spaces to use for
             indentation.
 
@@ -24,7 +24,7 @@ class DocString(object):
     def __init__(self, docstring):
         self.docstring = docstring
         self.argdelimiter = ': '
-        self.secdelimiter = ':' 
+        self.secdelimiter = ':'
         self.indent = 2
 
     def parse(self):
@@ -34,27 +34,19 @@ class DocString(object):
         """
         pass
 
-    def args(self, keywords=''):
-        """
-        This method should be overloaded to specify how to parse the argument
-        section.
-        """
-        pass
-
-    def returns(self, keywords=''):
-        """
-        This method should be overloaded to specify how to parse the return
-        section.
-        """
-        pass
-
-    def section(self, keywords=''):
+    def extract_section(self, keywords='', require=False):
         """
         This method should be overloaded to specify how to extract a section.
         """
         pass
 
-    def arglist(self, keywords=''):
+    def parse_section(self, keywords='', require=False):
+        """
+        This method should be overloaded to specify how to parse a section.
+        """
+        pass
+
+    def parse_arglist(self, section, require=False):
         """
         This method should be overloaded to specify how to parse an argument
         list.
@@ -71,11 +63,15 @@ class GoogleDocString(DocString):
 
     def parse(self):
         docstr = {}
-        docstr['args'] = self.args('Args|Arguments')
-        docstr['returns'] = self.returns('Returns')
+        docstr['args'] = self.parse_section('Args|Arguments', require_args=True)
+        docstr['returns'] = self.parse_section('Returns')
+        docstr['yields'] = self.parse_section('Yields')
+        docstr['raises'] = self.parse_section('Raises')
+        docstr['notes'] = self.parse_section('Note|Notes')
+        docstr['examples'] = self.parse_section('Example|Examples')
         return docstr
 
-    def section(self, keywords='Args|Arguments', require=False):
+    def extract_section(self, keywords='Args|Arguments', require=False):
         """
         Extracts a section from the docstring.
 
@@ -129,7 +125,7 @@ class GoogleDocString(DocString):
 
         Raises:
             ValueError: This is exception is raised when no argument list is
-                found and `require` is set to `True`. 
+                found and `require` is set to `True`.
 
         Notes:
             This method can be used to parse any section that is formatted as:
@@ -141,16 +137,16 @@ class GoogleDocString(DocString):
                     new line must be indented by at least two spaces.
 
         """
-        return self.arglist(self.section(keywords), require)
+        return self.parse_arglist(self.extract_section(keywords), require)
 
-    def returns(self, keywords='Returns'):
-        section = self.section(keywords)
+    def parse_section(self, keywords='Returns', require_args=False):
+        section = self.extract_section(keywords)
         if section:
-            return self.blocks(section)
+            return self.parse_blocks(section, require_args)
         else:
             return None
 
-    def blocks(self, section):
+    def parse_blocks(self, section, require_args=False):
         """
         Parses blocks in a section by searching for an argument list, and
         regular notes. The argument list must be the first block in the section.
@@ -159,12 +155,12 @@ class GoogleDocString(DocString):
         Returns:
             A dictionary that contains the key `args` for holding the argument
             list (`None`) if not found and the key `text` for holding regular
-            notes. 
+            notes.
 
         Example:
             Section:
                 This is block 1 and may or not contain an argument list (see
-                `args` for details). 
+                `args` for details).
 
                 This is block 2 and any should not contain any argument list.
 
@@ -177,14 +173,14 @@ class GoogleDocString(DocString):
         text = []
         for idx, block in enumerate(blocks):
             if idx == 0:
-                args = self.arglist(block)
+                args = self.parse_arglist(block, require_args)
                 if not args:
                     text.append(block)
             else:
                 text.append(block)
         return {'args' : args, 'text' : '\n\n'.join(text)}
 
-    def arglist(self, section, require=False):
+    def parse_arglist(self, section, require=False):
         # Parse arguments
         # The format is `variable (optional signature): description`. The
         # variable and signature is separated from the description using `: `
@@ -208,9 +204,6 @@ class GoogleDocString(DocString):
                             'description' : sanitize(match[2])})
         return argsout
 
-    def returntype(self, section):
-        pass
-
 def parse(obj, parser=GoogleDocString):
     """
     Parses a docstring using a parser that matches the formatting of the
@@ -231,4 +224,4 @@ def sanitize(txt):
     Removes indentation and trailing white spaces from a string.
     """
     import textwrap
-    return ' '.join(map(textwrap.dedent, txt.split('\n'))).strip()
+    return ' '.join([textwrap.dedent(x) for x in txt.split('\n')]).strip()
