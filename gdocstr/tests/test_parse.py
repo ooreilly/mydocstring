@@ -16,10 +16,11 @@ def test_arguments():
     docstr = parse.parse(match)
 
     args = docstr['args']
-    args[0]['name'] == 'arg1'
+    print(args)
+    args[0]['specifier'] == 'arg1'
     args[0]['signature'] == ['type']
     args[0]['description'] == 'description for arg1'
-    args[1]['name'] == 'arg2'
+    args[1]['specifier'] == 'arg2'
     args[1]['signature'] == ['']
     args[1]['description'] == 'description for arg2'
 
@@ -27,4 +28,8 @@ def test_arguments():
     with pytest.raises(ValueError) : parse.parse(match)
 
 def test_return():
-    pass
+    import json
+    example = 'fixtures/example.py'
+    match = extract(example, 'function_with_docstring')
+    google = parse.GoogleDocString(match['docstring'])
+    output = google.returns()

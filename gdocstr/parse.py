@@ -72,7 +72,7 @@ class GoogleDocString(DocString):
     def parse(self):
         docstr = {}
         docstr['args'] = self.args('Args|Arguments')
-        #docstr['returns'] = self.returns('Returns')
+        docstr['returns'] = self.returns('Returns')
         return docstr
 
     def section(self, keywords='Args|Arguments', require=False):
@@ -116,7 +116,7 @@ class GoogleDocString(DocString):
 
         return textwrap.dedent('\n'.join(txt))
 
-    def args(self, keywords='Args|Arguments'):
+    def args(self, keywords='Args|Arguments', require=True):
         """
         Parses the argument list of a section in the docstring.
 
@@ -124,6 +124,12 @@ class GoogleDocString(DocString):
             keywords (str, optional): This string specifies all aliases for the
                 block to parse. Each alias is separated by |. Defaults to
                 `'Args|Arguments'`.
+            require (bool, optional): Require the section to have an argument
+            list and raise an exception if none is found.
+
+        Raises:
+            ValueError: This is exception is raised when no argument list is
+                found and `require` is set to `True`. 
 
         Notes:
             This method can be used to parse any section that is formatted as:
@@ -135,31 +141,75 @@ class GoogleDocString(DocString):
                     new line must be indented by at least two spaces.
 
         """
-        return self.arglist(self.section(keywords))
+        return self.arglist(self.section(keywords), require)
 
-    def returns(self):
-        pass
+    def returns(self, keywords='Returns'):
+        section = self.section(keywords)
+        if section:
+            return self.blocks(section)
+        else:
+            return None
 
+    def blocks(self, section):
+        """
+        Parses blocks in a section by searching for an argument list, and
+        regular notes. The argument list must be the first block in the section.
+        A section is broken up into multiple blocks by having empty lines.
 
-    def arglist(self, section):
+        Returns:
+            A dictionary that contains the key `args` for holding the argument
+            list (`None`) if not found and the key `text` for holding regular
+            notes. 
+
+        Example:
+            Section:
+                This is block 1 and may or not contain an argument list (see
+                `args` for details). 
+
+                This is block 2 and any should not contain any argument list.
+
+        """
+        import warnings
+
+        blocks = section.split('\n\n')
+
+        args = None
+        text = []
+        for idx, block in enumerate(blocks):
+            if idx == 0:
+                args = self.arglist(block)
+                if not args:
+                    text.append(block)
+            else:
+                text.append(block)
+        return {'args' : args, 'text' : '\n\n'.join(text)}
+
+    def arglist(self, section, require=False):
         # Parse arguments
         # The format is `variable (optional signature): description`. The
         # variable and signature is separated from the description using `: `
         # (including space). Space in the separator is needed to to ensure there
         # is no clash with restructured text syntax (e.g., :any:). Multiline
-        # line descriptions must be indented using at least two spaces.
-        pattern = r'^(\w*)\s*(?:\((.*)\))*\s*:\s(.*\n(?:^\s{2,}.*)*)'
+        # line descriptions must be indented using at least `indent` number of
+        # spaces.
+        pattern = (r'^(\w*)\s*(?:\((.*)\))*\s*%s' % self.argdelimiter +
+                   r'(.*\n?(?:^\s{%s,}.*)*)' % self.indent)
         matches = re.compile(pattern, re.M).findall(section)
 
         if not matches:
-            raise ValueError('Failed to parse argument list:\n `%s` ' %
-                             (section))
+            if require:
+                raise ValueError('Failed to parse argument list:\n `%s` ' %
+                                 (section))
+            return None
 
         argsout = []
         for match in matches:
-            argsout.append({'name' : match[0], 'signature' : match[1],
-                            'description' : match[2].strip()})
+            argsout.append({'specifier' : match[0], 'signature' : match[1],
+                            'description' : sanitize(match[2])})
         return argsout
+
+    def returntype(self, section):
+        pass
 
 def parse(obj, parser=GoogleDocString):
     """
@@ -175,3 +225,10 @@ def parse(obj, parser=GoogleDocString):
     docstr = parser.parse()
     return docstr
 
+
+def sanitize(txt):
+    """
+    Removes indentation and trailing white spaces from a string.
+    """
+    import textwrap
+    return ' '.join(map(textwrap.dedent, txt.split('\n'))).strip()
