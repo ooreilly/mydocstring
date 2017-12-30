@@ -191,7 +191,6 @@ class GoogleDocString(DocString):
         return out
 
     def extract_sections(self):
-
         sections = []
         section = []
         headerstr = ''
@@ -216,8 +215,6 @@ class GoogleDocString(DocString):
                 section.append(line)
         sections.append('\n'.join(section))
         return sections
-
-
 
     def parse_arglist(self, section, require=False):
         # Parse arguments
@@ -244,7 +241,7 @@ class GoogleDocString(DocString):
         return argsout
 
     def _header(self):
-        return re.compile(r'(\w+)%s\s*'%(self.secdelimiter))
+        return re.compile(r'^\s*(\w+)%s\s*'%(self.secdelimiter))
 
     def _indent(self):
         return re.compile(r'(^\s{%s,})'%self.indent)
