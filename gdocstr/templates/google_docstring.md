@@ -5,7 +5,7 @@ ${h2} ${block['header']}
     %endif
     %if block['args']:
         %for arg in block['args']:
-* **${arg['specifier']}** ${arg['signature']} : ${arg['description']}
+* **${arg['field']}** ${arg['signature']} : ${arg['description']}
         %endfor
     %endif
 ${block['text']}

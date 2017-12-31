@@ -205,6 +205,8 @@ class GoogleDocString(DocString):
         """
         import textwrap
 
+        parsed_section = ''
+
         # Get header
         lines = section.split('\n')
         header = self._header().findall(lines[0])
@@ -216,22 +218,14 @@ class GoogleDocString(DocString):
         else:
             header = ''
 
-        #section = textwrap.dedent(section)#.strip()
-        blocks = section.split('\n')
+        # Get argument list
+        args = self.parse_arglist(section, require_args)
+        if args:
+            section = ''
 
-        args = None
-        textlst = []
-        for idx, block in enumerate(blocks):
-            if idx == 0:
-                args = self.parse_arglist(block, require_args)
-                if not args:
-                    textlst.append(block + 'end of block')
-            else:
-                textlst.append(block + 'end of block')
         out = {}
         out['header'] = header
-        text = '\n'.join(textlst)
-        out['text'] = text
+        out['text'] = section
         out['args'] = args
         return out
 
@@ -242,30 +236,54 @@ class GoogleDocString(DocString):
         `Returns`. All text within  a section is indented and the section ends
         after the indention.
         """
+        import textwrap
 
         sections = []
         section = []
         headerstr = ''
         header = self._header()
-        indent = self._indent()
-        for line in self.docstring.split('\n'):
-            # Store the header for future use if it is found.
-            # The header will start the section. However,
-            # we do not know from a single line if it is the header or not. We
-            # also need to see the if there is any indent on the next line.
-            if not headerstr and header.findall(line):
-                headerstr = line
-            elif indent.findall(line):
-                # Close the previous section
-                sections.append('\n'.join(section))
-                # and start the next one
-                section = []
-                section.append(headerstr)
-                section.append(line)
-                headerstr = ''
-            else:
-                section.append(line)
-        sections.append('\n'.join(section))
+        regex_indent = self._indent()
+        prevline = ''
+        indent = 0
+        current_indent = 0
+        main_indent =0
+        is_main = True
+        is_section = False
+        lines = self.docstring.split('\n')
+        for i, line in enumerate(lines):
+
+            # Compute amount of indentation
+            current_indent = get_indent(regex_indent, line)
+
+
+            # Save previous line
+            if i > 0:
+                if header.findall(prevline) and is_main:
+                    is_section = True
+                    is_main = False
+                    # Close the previous section
+                    section_text = '\n'.join(section)
+                    if section_text:
+                        sections.append(section_text)
+                    # and start the next one
+                    section = []
+                    section.append(prevline[indent:])
+                    indent = current_indent
+                else:
+                    section.append(prevline[indent:])
+                # Section ends because of a change in indent that is not caused
+                # by a line break
+                if line != '' and is_section and current_indent < indent:
+                    is_main = True
+                    is_section = False
+                    indent = 0
+
+            prevline = line
+
+        section.append(prevline[indent:])
+        section_text = '\n'.join(section)
+        sections.append(section_text)
+
         return sections
 
     def parse_arglist(self, section, require=False):
@@ -276,8 +294,9 @@ class GoogleDocString(DocString):
         # is no clash with restructured text syntax (e.g., :any:). Multiline
         # line descriptions must be indented using at least `indent` number of
         # spaces.
+        
         pattern = (r'^(\w*)\s*(?:(\(.*\)))*\s*%s' % self.argdelimiter +
-                   r'(.*\n?(?:^\s{%s,}.*)*)' % self.indent)
+                   r'(.*\n?(?:^\s{%s,}.*\n)*)' % self.indent)
         matches = re.compile(pattern, re.M).findall(section)
 
         if not matches:
@@ -286,10 +305,15 @@ class GoogleDocString(DocString):
                                  (section))
             return None
 
+
+
         argsout = []
         for match in matches:
-            argsout.append({'specifier' : match[0], 'signature' : match[1],
-                            'description' : match[2]})
+            field = match[0]
+            signature = match[1]
+            description = match[2].rstrip()
+            argsout.append({'field' : field, 'signature' : signature,
+                            'description' : description})
         return argsout
 
     def _header(self):
@@ -353,3 +377,13 @@ def summary(txt):
     """
     lines = txt.split('\n')
     return lines[0]
+
+def get_indent(regex, txt):
+    """
+    Returns the indentation size.
+    """
+    indent_size = regex.findall(txt)
+    if indent_size:
+        return len(indent_size[0])
+    else:
+        return 0

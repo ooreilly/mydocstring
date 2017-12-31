@@ -12,17 +12,16 @@ def test_extract():
     match = extract.extract(example, 'function_with_docstring')
     assert match['function'] == 'function_with_docstring'
     assert match['signature'] == '(arg1, arg2=True)'
-    assert match['dtype'] == 'function'
+    assert match['type'] == 'function'
     
     match = extract.extract(example, 'ExampleOldClass')
     assert match['class'] == 'ExampleOldClass'
-    assert match['signature'] == ''
-    assert match['dtype'] == 'class'
+    assert match['type'] == 'class'
     
     match = extract.extract(example, 'ExampleNewClass')
     assert match['class'] == 'ExampleNewClass'
     assert match['signature'] == '(object)'
-    assert match['dtype'] == 'class'
+    assert match['type'] == 'class'
 
     match = extract.extract(example, 'ExampleOldClass.__init__')
 

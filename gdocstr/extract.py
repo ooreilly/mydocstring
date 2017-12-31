@@ -93,16 +93,25 @@ class Extract(object):
             raise NameError(r'Unable to extract docstring for `%s`' % self.query)
         else:
             out = {}
-            if matches[0][0]:
-                out['class'] = matches[0][0]
-            if matches[0][1]:
-                out['function'] = matches[0][1]
-            if matches[0][2]:
-                out['signature'] = matches[0][2]
-            if matches[0][3]:
-                out['docstring'] = matches[0][3]
-            if self.dtype:
-                out['type'] = self.dtype
+
+            cls = matches[0][0]
+            function = matches[0][1]
+            signature = matches[0][2]
+            indent = len(matches[0][3])
+            # Remove indentation from docstring
+            lines = matches[0][4].split('\n')
+            if lines[0] != '\n':
+                header =  '\n' + lines[0]
+            else:
+                header = ''
+            docstring = '\n'.join([header] + [line[indent:] for line in
+                                  lines[1:]])
+
+            out['class'] = cls
+            out['function'] = function
+            out['signature'] = signature
+            out['docstring'] = docstring
+            out['type'] = self.dtype
 
             return out
 
@@ -112,12 +121,12 @@ class PyExtract(Extract):
     """
 
     def extract_function(self):
-        pattern = (r'^\s*()def\s(%s)(\((?!self)[:=,\s\w]*\)):\n*\s+"""([\w\W]*?)"""' %
+        pattern = (r'^\s*()def\s(%s)(\((?!self)[:=,\s\w]*\)):\n*(\s+)"""([\w\W]*?)"""' %
                    self.funcname)
         return self.find(pattern)
 
     def extract_class(self):
-        pattern = (r'^\s*class\s+(%s)()(\(\w*\))?:\n\s+"""([\w\W]*?)"""' %
+        pattern = (r'^\s*class\s+(%s)()(\(\w*\))?:\n(\s+)"""([\w\W]*?)"""' %
                    self.classname)
         return self.find(pattern)
 
@@ -126,14 +135,14 @@ class PyExtract(Extract):
         # Then check that method signature matches.
         # Finally get the docstring.
         pattern = (r'class\s+(%s)\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
-                   r'[\n\s]+def\s+(%s)(\(self[:=\w,\s]*\)):' % self.funcname +
-                   r'[\n\s]+"""([\w\W]*?)"""')
+                   r'[\n\s]+def\s+(%s)(\(self[:=\w,\s]*\)):\n' % self.funcname +
+                   r'(\s+)"""([\w\W]*?)"""')
         return self.find(pattern)
 
     def extract_module(self):
         # The module docstring does not have any name and signature,
         # so skip these.
-        pattern = r'()()()^"""([\w\W]*?)"""'
+        pattern = r'()()()()^"""([\w\W]*?)"""'
         return self.find(pattern)
 
 
