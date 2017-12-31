@@ -24,7 +24,7 @@ class Extract(object):
 
     def extract(self):
         """
-        Extractes the docstring.
+        Extracts the docstring.
 
         """
 
@@ -90,12 +90,13 @@ class Extract(object):
         import warnings
         matches = re.compile(pattern, re.M).findall(self.txt)
         if not matches:
-            warnings.warn(r'Unable to extract docstring for `%s`' % self.query)
+            raise NameError(r'Unable to extract docstring for `%s`' % self.query)
             return None
         else:
-            return {'name': matches[0][0],
-                    'signature': matches[0][1],
-                    'docstring': matches[0][2],
+            return {'class' : matches[0][0], 
+                    'function': matches[0][1],
+                    'signature': matches[0][2],
+                    'docstring': matches[0][3],
                     'dtype': self.dtype}
 
 class PyExtract(Extract):
@@ -104,12 +105,12 @@ class PyExtract(Extract):
     """
 
     def extract_function(self):
-        pattern = (r'def\s(%s)(\((?!self)[:=,\s\w]*\)):\n*\s+"""([\w\W]*?)"""' %
+        pattern = (r'^\s*()def\s(%s)(\((?!self)[:=,\s\w]*\)):\n*\s+"""([\w\W]*?)"""' %
                    self.funcname)
         return self.find(pattern)
 
     def extract_class(self):
-        pattern = (r'class\s*(%s)(\(?\w*\)?):\n*\s+"""([\w\W]*?)"""' %
+        pattern = (r'^\s*class\s+(%s)()(\(\w*\))?:\n\s+"""([\w\W]*?)"""' %
                    self.classname)
         return self.find(pattern)
 
@@ -117,7 +118,7 @@ class PyExtract(Extract):
         # First check that the class name matches.
         # Then check that method signature matches.
         # Finally get the docstring.
-        pattern = (r'class\s+%s\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
+        pattern = (r'class\s+(%s)\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
                    r'[\n\s]+def\s+(%s)(\(self[:=\w,\s]*\)):' % self.funcname +
                    r'[\n\s]+"""([\w\W]*?)"""')
         return self.find(pattern)
@@ -125,13 +126,13 @@ class PyExtract(Extract):
     def extract_module(self):
         # The module docstring does not have any name and signature,
         # so skip these.
-        pattern = r'()()^"""([\w\W]*?)"""'
+        pattern = r'()()()^"""([\w\W]*?)"""'
         return self.find(pattern)
 
 
 def extract(filestr, query):
     """
-    Extractes a docstring from source.
+    Extracts a docstring from source.
 
     Arguments:
         filestr: A string that specifies filename of the source code to extract
