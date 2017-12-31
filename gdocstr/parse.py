@@ -61,6 +61,7 @@ class GoogleDocString(DocString):
 
     def parse(self):
         docstr = []
+        self.headers = 'Args|Arguments|Returns|Yields|Raises|Note|Notes|Example|Examples'
 
         sections = self.extract_sections()
         for section in sections:
@@ -224,7 +225,7 @@ class GoogleDocString(DocString):
         # is no clash with restructured text syntax (e.g., :any:). Multiline
         # line descriptions must be indented using at least `indent` number of
         # spaces.
-        pattern = (r'^(\w*)\s*(?:\((.*)\))*\s*%s' % self.argdelimiter +
+        pattern = (r'^(\w*)\s*(?:(\(.*\)))*\s*%s' % self.argdelimiter +
                    r'(.*\n?(?:^\s{%s,}.*)*)' % self.indent)
         matches = re.compile(pattern, re.M).findall(section)
 
@@ -241,7 +242,7 @@ class GoogleDocString(DocString):
         return argsout
 
     def _header(self):
-        return re.compile(r'^\s*(\w+)%s\s*'%(self.secdelimiter))
+        return re.compile(r'^\s*(%s)%s\s*'%(self.headers, self.secdelimiter))
 
     def _indent(self):
         return re.compile(r'(^\s{%s,})'%self.indent)
