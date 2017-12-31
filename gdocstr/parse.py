@@ -21,7 +21,14 @@ class DocString(object):
     """
 
     def __init__(self, docstring):
-        self.docstring = docstring
+        self.header = {}
+        # Copy header data from docstring
+        for d in docstring:
+            if d != 'docstring':
+                self.header[d] = docstring[d]
+        self.docstring = docstring['docstring']
+        self.data = []
+        self.mdtemplate = ''
         self.argdelimiter = ': '
         self.secdelimiter = ':'
         self.indent = 2
@@ -31,26 +38,69 @@ class DocString(object):
         This method should be overloaded and perform the parsing of all
         sections.
         """
-        pass
+        self.data = []
+        sections = self.extract_sections()
+        for section in sections:
+            self.data.append(self.parse_section(section))
+        return self.data
 
-    def extract_sections(self, keywords='', require=False):
+    def extract_sections(self):
         """
         This method should be overloaded to specify how to extract sections.
         """
         pass
-
-    def parse_section(self, keywords='', require=False):
+    
+    def parse_section(self):
         """
         This method should be overloaded to specify how to parse a section.
         """
         pass
 
-    def parse_arglist(self, section, require=False):
+    def __json__(self):
         """
-        This method should be overloaded to specify how to parse an argument
-        list.
+        Output docstring as JSON data.
         """
-        pass
+        import json
+
+        data = self.data
+        data.append(self.header)
+        return json.dumps(self.data, sort_keys=True,
+                          indent=4, separators=(',', ': '))
+    
+    def __str__(self):
+        """
+        This method should be overloaded to specify how to output to plain-text.
+        """
+        txt = ''
+        if 'class' in self.header:
+            txt += self.header['class']
+            if 'function' in self.header:
+                txt += '.'
+        for prop in ['function', 'signature']:
+            if prop in self.header:
+                txt += self.header[prop]
+        txt += self.docstring
+        return txt
+    
+    def __markdown__(self, filename=None):
+        """
+        Output docstring as markdown using a template.
+
+        Args:
+            filename (str, optional) : select template to use for markdown
+                rendering.
+        """
+        from mako.template import Template
+        if not filename:
+            filename = self.mdtemplate
+        template = Template(filename=filename)
+        data = self.data
+        headers = self.headers.split('|')
+        h1 = '#'
+        h2 = '##'
+        h3 = '###'
+        return template.render(header=self.header, blocks=data, 
+                                 headers=headers, h1=h1, h2=h2, h3=h3)
 
 
 class GoogleDocString(DocString):
@@ -59,14 +109,12 @@ class GoogleDocString(DocString):
     to the Google style guide: .
     """
 
-    def parse(self):
-        docstr = []
-        self.headers = 'Args|Arguments|Returns|Yields|Raises|Note|Notes|Example|Examples'
-
-        sections = self.extract_sections()
-        for section in sections:
-            docstr.append(self.parse_section(section))
-        return docstr
+    def __init__(self, docstring):
+        self.template = 'templates/google_docstring.md'
+        self.headers = ('Args|Arguments|Returns|Yields|Raises|Note|' +
+                        'Notes|Example|Examples|Attributes|Todo')
+        super(GoogleDocString, self).__init__(docstring)
+        self.mdtemplate = 'templates/google_docstring.md'
 
     def extract_section(self, keywords='Args|Arguments', require=False):
         """
@@ -155,7 +203,6 @@ class GoogleDocString(DocString):
                 This is block 2 and any should not contain any argument list.
 
         """
-        import warnings
         import textwrap
 
         # Get header
@@ -169,29 +216,33 @@ class GoogleDocString(DocString):
         else:
             header = ''
 
-        section = textwrap.dedent(section).strip()
-        blocks = section.split('\n\n')
+        #section = textwrap.dedent(section)#.strip()
+        blocks = section.split('\n')
 
         args = None
-        text = []
+        textlst = []
         for idx, block in enumerate(blocks):
             if idx == 0:
                 args = self.parse_arglist(block, require_args)
                 if not args:
-                    text.append(block)
+                    textlst.append(block + 'end of block')
             else:
-                text.append(block)
+                textlst.append(block + 'end of block')
         out = {}
-        if header:
-            out['header'] = header
-        text = '\n\n'.join(text)
-        if text:
-            out['text'] = text
-        if args:
-            out['args'] = args
+        out['header'] = header
+        text = '\n'.join(textlst)
+        out['text'] = text
+        out['args'] = args
         return out
 
     def extract_sections(self):
+        """
+        Extracts sections from the docstring. Sections are identified by an
+        additional header which is a recognized Keyword such as `Args` or
+        `Returns`. All text within  a section is indented and the section ends
+        after the indention.
+        """
+
         sections = []
         section = []
         headerstr = ''
@@ -204,15 +255,15 @@ class GoogleDocString(DocString):
             # also need to see the if there is any indent on the next line.
             if not headerstr and header.findall(line):
                 headerstr = line
-            elif headerstr and indent.findall(line):
+            elif indent.findall(line):
                 # Close the previous section
                 sections.append('\n'.join(section))
-                # and start the next one   
+                # and start the next one
                 section = []
                 section.append(headerstr)
                 section.append(line)
                 headerstr = ''
-            elif line:
+            else:
                 section.append(line)
         sections.append('\n'.join(section))
         return sections
@@ -238,7 +289,7 @@ class GoogleDocString(DocString):
         argsout = []
         for match in matches:
             argsout.append({'specifier' : match[0], 'signature' : match[1],
-                            'description' : sanitize(match[2])})
+                            'description' : match[2]})
         return argsout
 
     def _header(self):
@@ -246,6 +297,34 @@ class GoogleDocString(DocString):
 
     def _indent(self):
         return re.compile(r'(^\s{%s,})'%self.indent)
+
+def parser(obj, choice='Google'):
+    """
+    Returns a new docstring parser based on selection. Currently, only the
+    Google docstring syntax is supported.
+
+    Args:
+        obj : A dictionary that contains the docstring and other properties.
+            This object is typically obtained by calling the `extract` function.
+        choice: Keyword that determines the parser to use. Defaults to
+            `'Google'`.
+
+    Returns:
+        A parser for the selected docstring syntax.
+
+    Raises:
+        NotImplementedError : This exception is raised when no parser is found.
+        
+        
+
+    """
+    parsers = {'Google' : GoogleDocString}
+
+    if choice in parsers:
+        return parsers[choice](obj)
+    else:
+        NotImplementedError('The docstring parser `%s` is not implemented' %
+                             choice)
 
 def parse(obj, parser=GoogleDocString):
     """
@@ -257,7 +336,7 @@ def parse(obj, parser=GoogleDocString):
             This object is typically obtained by calling the `extract` function.
 
     """
-    parser = parser(obj['docstring'])
+    parser = parser(obj)
     docstr = parser.parse()
     return docstr
 
@@ -272,5 +351,5 @@ def summary(txt):
     """
     Returns the first line of a string.
     """
-    lines =  txt.split('\n')
+    lines = txt.split('\n')
     return lines[0]

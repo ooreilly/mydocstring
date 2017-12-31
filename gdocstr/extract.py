@@ -91,13 +91,20 @@ class Extract(object):
         matches = re.compile(pattern, re.M).findall(self.txt)
         if not matches:
             raise NameError(r'Unable to extract docstring for `%s`' % self.query)
-            return None
         else:
-            return {'class' : matches[0][0], 
-                    'function': matches[0][1],
-                    'signature': matches[0][2],
-                    'docstring': matches[0][3],
-                    'dtype': self.dtype}
+            out = {}
+            if matches[0][0]:
+                out['class'] = matches[0][0]
+            if matches[0][1]:
+                out['function'] = matches[0][1]
+            if matches[0][2]:
+                out['signature'] = matches[0][2]
+            if matches[0][3]:
+                out['docstring'] = matches[0][3]
+            if self.dtype:
+                out['type'] = self.dtype
+
+            return out
 
 class PyExtract(Extract):
     """
