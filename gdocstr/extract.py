@@ -37,7 +37,7 @@ class Extract(object):
         self.classname = ''
         self.funcname = ''
         self.dtype = ''
-        
+
 
     def extract(self, query):
         """
@@ -114,7 +114,7 @@ class Extract(object):
                  * `signature` : The signature of the function/method.
                  * `docstring` : The docstring itself.
                  * `type` : What type of construct the docstring is attached to.
-                      This can be either `'module'`, `'class'`, `'method'`, or 
+                      This can be either `'module'`, `'class'`, `'method'`, or
                       `'function'`.
                  * `label` : The search query string.
                  * `filename` : The filename of source to extract docstrings from.
@@ -122,28 +122,22 @@ class Extract(object):
 
         Raises:
             NameError: This is exception is raised if the docstring cannot be
-            extracted.
+                extracted.
         """
+        import textwrap
         matches = re.compile(pattern, re.M).findall(self.txt)
         if not matches:
             raise NameError(r'Unable to extract docstring for `%s`' % self.query)
         else:
-            out = {}
 
             cls = matches[0][0]
             function = matches[0][1]
             signature = matches[0][2]
             indent = len(matches[0][3])
-            # Remove indentation from docstring
-            lines = matches[0][4].split('\n')
-            if lines[0] != '\n':
-                header =  '\n' + lines[0]
-            else:
-                header = ''
-            docstring = '\n'.join([header] + [line[indent:] for line in
-                                  lines[1:]])
+            docstring = remove_indent(matches[0][4], indent)
+            source = textwrap.dedent('def ' + function + signature + ':\n' + matches[0][5])
 
-            source = matches[0][5]
+            out = {}
             out['class'] = cls
             out['function'] = function
             out['signature'] = signature
@@ -161,8 +155,8 @@ class PyExtract(Extract):
     """
 
     def extract_function(self):
-        pattern = (r'^\s*()def\s(%s)(\((?!self)[:=,\s\w]*\)):\n*(\s+)"""([\w\W]*?)"""\n((\4.*\n+)+)?' %
-                   self.funcname)
+        pattern = (r'^\s*()def\s(%s)(\((?!self)[:=,\s\w]*\)):' % self.funcname
+                   + r'\n*(\s+)"""([\w\W]*?)"""\n((\4.*\n+)+)?')
         return self.find(pattern)
 
     def extract_class(self):
@@ -244,3 +238,15 @@ def get_names(query):
         raise ValueError('Unable to parse: `%s`' % query)
 
     return (classname, funcname, dtype)
+
+def remove_indent(txt, indent):
+    """
+    Dedents a string by a certain amount.
+    """
+    lines = txt.split('\n')
+    if lines[0] != '\n':
+        header = '\n' + lines[0]
+    else:
+        header = ''
+    return '\n'.join([header] + [line[indent:] for line in lines[1:]])
+

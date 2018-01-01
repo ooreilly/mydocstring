@@ -49,7 +49,7 @@ class DocString(object):
         This method should be overloaded to specify how to extract sections.
         """
         pass
-    
+
     def parse_section(self):
         """
         This method should be overloaded to specify how to parse a section.
@@ -66,7 +66,7 @@ class DocString(object):
         data.append(self.header)
         return json.dumps(self.data, sort_keys=True,
                           indent=4, separators=(',', ': '))
-    
+
     def __str__(self):
         """
         This method should be overloaded to specify how to output to plain-text.
@@ -81,7 +81,7 @@ class DocString(object):
                 txt += self.header[prop]
         txt += self.docstring
         return txt
-    
+
     def __markdown__(self, filename=None):
         """
         Output docstring as markdown using a template.
@@ -99,7 +99,7 @@ class DocString(object):
         h1 = '#'
         h2 = '##'
         h3 = '###'
-        return template.render(header=self.header, sections=data, 
+        return template.render(header=self.header, sections=data,
                                  headers=headers, h1=h1, h2=h2, h3=h3)
 
 
@@ -294,7 +294,7 @@ class GoogleDocString(DocString):
         # is no clash with restructured text syntax (e.g., :any:). Multiline
         # line descriptions must be indented using at least `indent` number of
         # spaces.
-        
+
         pattern = (r'^(\w*)\s*(?:(\(.*\)))*\s*%s' % self.argdelimiter +
                    r'(.*\n?(?:^\s{%s,}.*\n)*)' % self.indent)
         matches = re.compile(pattern, re.M).findall(section)
@@ -338,8 +338,8 @@ def parser(obj, choice='Google'):
 
     Raises:
         NotImplementedError : This exception is raised when no parser is found.
-        
-        
+
+
 
     """
     parsers = {'Google' : GoogleDocString}

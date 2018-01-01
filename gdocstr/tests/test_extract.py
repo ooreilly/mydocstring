@@ -13,6 +13,8 @@ def test_extract():
     assert match['function'] == 'function_with_docstring'
     assert match['signature'] == '(arg1, arg2=True)'
     assert match['type'] == 'function'
+    assert match['source'] == 'def function_with_docstring(arg1, arg2=True):\n    pass\n\n'
+    assert match['docstring']
     
     match = extract.extract(example, 'ExampleOldClass')
     assert match['class'] == 'ExampleOldClass'

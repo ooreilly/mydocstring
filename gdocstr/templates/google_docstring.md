@@ -1,13 +1,31 @@
 ## -*- coding: utf-8 -*-
-%for block in blocks:
-    %if block['header']:
-${h2} ${block['header']}
+
+
+%if header['function']:
+    %if header['class']:
+${h1} ${header['class']}.${header['function']}
+    %else:
+${h1} ${header['function']}
     %endif
-    %if block['args']:
-        %for arg in block['args']:
+```python
+def ${header['function']} ${header['signature']}:
+```
+%endif 
+%for section in sections:
+    %if section['header']:
+${h2} ${section['header']}
+    %endif
+    %if section['args']:
+        %for arg in section['args']:
 * **${arg['field']}** ${arg['signature']} : ${arg['description']}
         %endfor
     %endif
-${block['text']}
+${section['text']}
 %endfor
+%if header['source']:
+${h2} Source
+```python
+${header['source']}
+```
+%endif
 
