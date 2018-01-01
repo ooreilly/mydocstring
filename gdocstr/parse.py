@@ -99,7 +99,7 @@ class DocString(object):
         h1 = '#'
         h2 = '##'
         h3 = '###'
-        return template.render(header=self.header, blocks=data, 
+        return template.render(header=self.header, sections=data, 
                                  headers=headers, h1=h1, h2=h2, h3=h3)
 
 

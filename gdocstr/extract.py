@@ -7,27 +7,54 @@ class Extract(object):
     """
     Base class for extracting docstrings.
 
+    Attributes:
+        filename: A string that that specifies the file to extract docstrings
+            from.
+        txt : A string that contains the source code that has been read from
+            `source`.
+        query : The docstring to search for. The search is specified in the form
+            of `Class.method`, or `function`, or `.` to search for the module
+            docstring.
+        classname : Holds the class name of the query.
+        funcname : Holds the function or method name of the query.
+        dtype : Holds the type of the query `module`, `class`, `method`, or
+            `function`.
+
     """
 
-    def __init__(self, txt, query):
+    def __init__(self, filename):
         """
         Initializer for Extract.
 
         Arguments:
-            txt: A string that holds the text to extract docstrings from.
-            query: A string that specifies what type of docstring to extract.
+            filename: A string that that specifies the file to extract
+                docstrings from.
 
         """
-        self.txt = txt
-        self.query = query
-        self.classname, self.funcname, self.dtype = get_names(query)
+        self.txt = open(filename).read()
+        self.filename = filename
+        self.query = ''
+        self.classname = ''
+        self.funcname = ''
+        self.dtype = ''
+        
 
-    def extract(self):
+    def extract(self, query):
         """
         Extracts the docstring.
 
+        Arguments:
+            query : The docstring to search for. The search is specified in the form
+                of `Class.method`, or `function`, or `.` to search for the module
+                docstring.
+
+        Returns:
+            A dictionary that matches the description given by `Extract.find`.
+
         """
 
+        self.query = query
+        self.classname, self.funcname, self.dtype = get_names(query)
         types = {'class' : self.extract_class,
                  'method' : self.extract_method,
                  'function' : self.extract_function,
@@ -82,12 +109,21 @@ class Extract(object):
 
         Returns:
             dict: The return type is a dictionary with the following keys:
-                `name` : The name of the function/method.
-                `signature` : the signature of the function/method.
-                `dtype` : What type of construct the docstring is attached to
-                `'module'`, `'class'`, `'method'`, or `'function'`.
+                 * `class` :  The name of the class.
+                 * `function` : The name of the function/method.
+                 * `signature` : The signature of the function/method.
+                 * `docstring` : The docstring itself.
+                 * `type` : What type of construct the docstring is attached to.
+                      This can be either `'module'`, `'class'`, `'method'`, or 
+                      `'function'`.
+                 * `label` : The search query string.
+                 * `filename` : The filename of source to extract docstrings from.
+                 * `source` : The source code if the query is a function/method.
+
+        Raises:
+            NameError: This is exception is raised if the docstring cannot be
+            extracted.
         """
-        import warnings
         matches = re.compile(pattern, re.M).findall(self.txt)
         if not matches:
             raise NameError(r'Unable to extract docstring for `%s`' % self.query)
@@ -107,11 +143,15 @@ class Extract(object):
             docstring = '\n'.join([header] + [line[indent:] for line in
                                   lines[1:]])
 
+            source = matches[0][5]
             out['class'] = cls
             out['function'] = function
             out['signature'] = signature
             out['docstring'] = docstring
+            out['source'] = source
             out['type'] = self.dtype
+            out['label'] = self.query
+            out['filename'] = self.filename
 
             return out
 
@@ -121,27 +161,22 @@ class PyExtract(Extract):
     """
 
     def extract_function(self):
-        pattern = (r'^\s*()def\s(%s)(\((?!self)[:=,\s\w]*\)):\n*(\s+)"""([\w\W]*?)"""' %
+        pattern = (r'^\s*()def\s(%s)(\((?!self)[:=,\s\w]*\)):\n*(\s+)"""([\w\W]*?)"""\n((\4.*\n+)+)?' %
                    self.funcname)
         return self.find(pattern)
 
     def extract_class(self):
-        pattern = (r'^\s*class\s+(%s)()(\(\w*\))?:\n(\s+)"""([\w\W]*?)"""' %
+        pattern = (r'^\s*class\s+(%s)()(\(\w*\))?:\n(\s+)"""([\w\W]*?)"""()' %
                    self.classname)
         return self.find(pattern)
 
     def extract_method(self):
-        # First check that the class name matches.
-        # Then check that method signature matches.
-        # Finally get the docstring.
         pattern = (r'class\s+(%s)\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
                    r'[\n\s]+def\s+(%s)(\(self[:=\w,\s]*\)):\n' % self.funcname +
-                   r'(\s+)"""([\w\W]*?)"""')
+                   r'(\s+)"""([\w\W]*?)"""\n((?:\4.*\n+)+)?')
         return self.find(pattern)
 
     def extract_module(self):
-        # The module docstring does not have any name and signature,
-        # so skip these.
         pattern = r'()()()()^"""([\w\W]*?)"""'
         return self.find(pattern)
 
@@ -160,12 +195,13 @@ def extract(filestr, query):
 
     filename = os.path.splitext(filestr)
     ext = filename[1]
-    txt = open(filestr).read()
 
-    if ext in ['.py']:
-        extractor = PyExtract(txt, query)
+    options = {'.py' : PyExtract}
 
-    return extractor.extract()
+    if ext in options:
+        extractor = options[ext](filestr)
+
+    return extractor.extract(query)
 
 
 def get_names(query):
