@@ -170,11 +170,13 @@ class GoogleDocString(DocString):
             notes.
 
         Example:
+            ```
             Section:
                 This is block 1 and may or not contain an argument list (see
                 `args` for details).
 
                 This is block 2 and any should not contain any argument list.
+            ```
 
         """
         import textwrap
@@ -214,47 +216,46 @@ class GoogleDocString(DocString):
         section = []
         header = self._header()
         regex_indent = self._indent()
-        prevline = ''
         indent = 0
         current_indent = 0
-        is_main = True
         is_section = False
+        new_section = False
         lines = self.docstring.split('\n')
 
-        for i, line in enumerate(lines):
+        def inline_new_section(section, sections):
+            """
+            Inline function for creating new section.
+            """
+            # Close the previous section
+            section_text = '\n'.join(section)
+            if section_text:
+                sections.append(section_text)
+            # and start the next one
+            section = []
+            indent = 0
+            return indent, section, sections
 
+        for line in lines:
             # Compute amount of indentation
             current_indent = get_indent(regex_indent, line)
 
+            if new_section and current_indent > 0:
+                new_section = False
+                indent = current_indent
 
-            # Save previous line
-            if i > 0:
-                if header.findall(prevline) and is_main:
-                    is_section = True
-                    is_main = False
-                    # Close the previous section
-                    section_text = '\n'.join(section)
-                    if section_text:
-                        sections.append(section_text)
-                    # and start the next one
-                    section = []
-                    section.append(prevline[indent:])
-                    indent = current_indent
-                else:
-                    section.append(prevline[indent:])
-                # Section ends because of a change in indent that is not caused
-                # by a line break
-                if line != '' and is_section and current_indent < indent:
-                    is_main = True
-                    is_section = False
-                    indent = 0
+            if header.findall(line):
+                is_section = True
+                indent, section, sections = inline_new_section(section, sections)
+                new_section = True
+            # Section ends because of a change in indent that is not caused
+            # by a line break
+            elif line and is_section and current_indent < indent:
+                is_section = False
+                indent, section, sections = inline_new_section(section, sections)
 
-            prevline = line
+            section.append(line[indent:])
 
-        section.append(prevline[indent:])
-        section_text = '\n'.join(section)
-        sections.append(section_text)
-
+        indent, section, sections = inline_new_section(section, sections)
         return sections
 
     def parse_arglist(self, section, require=False):
@@ -269,37 +270,39 @@ class GoogleDocString(DocString):
 
         Arguments:
 
-        section : A string that contains the text of the section to parse.
-        require (bool, optional) : If this optional argument is set to `True`,
-            then an exception is raised if parsing fails. Defaults to `False`.
-            Settings this argument to `True` may be useful for parsing sections
-            that like `Arguments` that should always contain any argument list.
+            section : A string that contains the text of the section to parse.
+            require (bool, optional) : If this optional argument is set to
+                `True`, then an exception is raised if parsing fails. Defaults
+                to `False`. Setting this argument to `True` may be useful for
+                parsing sections like `Arguments` that should always contain an
+                argument list.
 
         Returns:
 
-        list : Each item in this list is a dictionary that contains the
-            properties of an argument. These properties are the field,
-            signature, and description. If the no list is parsed, then `None` is
-            returned.
+            list : Each item in this list is a dictionary that contains the
+                properties of an argument. These properties are the field,
+                signature, and description. If the no list is parsed, then
+                `None` is returned.
+            what is this?
 
         Raises:
 
-        ValueError: This error is raised if `require` is `True` and parsing
-            fails.
+            ValueError : This error is raised if `require` is `True` and parsing
+                fails.
+
 
         """
+        import textwrap
 
         pattern = (r'^(\w*)\s*(?:(\(.*\)))*\s*%s' % self.argdelimiter +
                    r'(.*\n?(?:^\s{%s,}.*\n)*)' % self.indent)
-        matches = re.compile(pattern, re.M).findall(section)
+        matches = re.compile(pattern, re.M).findall(textwrap.dedent(section))
 
         if not matches:
             if require:
                 raise ValueError('Failed to parse argument list:\n `%s` ' %
                                  (section))
             return None
-
-
 
         argsout = []
         for match in matches:
@@ -343,13 +346,6 @@ def parser(obj, choice='Google'):
     else:
         NotImplementedError('The docstring parser `%s` is not implemented' %
                             choice)
-
-def sanitize(txt):
-    """
-    Removes indentation and trailing white spaces from a string.
-    """
-    import textwrap
-    return ' '.join([textwrap.dedent(x) for x in txt.split('\n')]).strip()
 
 def summary(txt):
     """
