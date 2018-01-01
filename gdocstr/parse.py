@@ -23,15 +23,13 @@ class DocString(object):
     def __init__(self, docstring):
         self.header = {}
         # Copy header data from docstring
-        for d in docstring:
-            if d != 'docstring':
-                self.header[d] = docstring[d]
+        for doc in docstring:
+            if doc != 'docstring':
+                self.header[doc] = docstring[doc]
         self.docstring = docstring['docstring']
+        self.headers = ''
         self.data = []
         self.mdtemplate = ''
-        self.argdelimiter = ': '
-        self.secdelimiter = ':'
-        self.indent = 2
 
     def parse(self):
         """
@@ -50,7 +48,7 @@ class DocString(object):
         """
         pass
 
-    def parse_section(self):
+    def parse_section(self, section):
         """
         This method should be overloaded to specify how to parse a section.
         """
@@ -96,11 +94,11 @@ class DocString(object):
         template = Template(filename=filename)
         data = self.data
         headers = self.headers.split('|')
-        h1 = '#'
-        h2 = '##'
-        h3 = '###'
+        hd1 = '#'
+        hd2 = '##'
+        hd3 = '###'
         return template.render(header=self.header, sections=data,
-                                 headers=headers, h1=h1, h2=h2, h3=h3)
+                               headers=headers, h1=hd1, h2=hd2, h3=hd3)
 
 
 class GoogleDocString(DocString):
@@ -111,10 +109,13 @@ class GoogleDocString(DocString):
 
     def __init__(self, docstring):
         self.template = 'templates/google_docstring.md'
+        super(GoogleDocString, self).__init__(docstring)
         self.headers = ('Args|Arguments|Returns|Yields|Raises|Note|' +
                         'Notes|Example|Examples|Attributes|Todo')
-        super(GoogleDocString, self).__init__(docstring)
         self.mdtemplate = 'templates/google_docstring.md'
+        self.argdelimiter = ': '
+        self.secdelimiter = ':'
+        self.indent = 2
 
     def extract_section(self, keywords='Args|Arguments', require=False):
         """
@@ -157,34 +158,7 @@ class GoogleDocString(DocString):
 
         return textwrap.dedent('\n'.join(txt))
 
-    def args(self, keywords='Args|Arguments', require=True):
-        """
-        Parses the argument list of a section in the docstring.
-
-        Args:
-            keywords (str, optional): This string specifies all aliases for the
-                block to parse. Each alias is separated by |. Defaults to
-                `'Args|Arguments'`.
-            require (bool, optional): Require the section to have an argument
-            list and raise an exception if none is found.
-
-        Raises:
-            ValueError: This is exception is raised when no argument list is
-                found and `require` is set to `True`.
-
-        Notes:
-            This method can be used to parse any section that is formatted as:
-
-            Keyword:
-                arg1 (optional signature): This is a single line description.
-                arg2 : This is an example of description that is too long to fit
-                    on a single line. For multiline descriptions to work, each
-                    new line must be indented by at least two spaces.
-
-        """
-        return self.parse_arglist(self.extract_section(keywords), require)
-
-    def parse_section(self, section, require_args=False):
+    def parse_section(self, section):
         """
         Parses blocks in a section by searching for an argument list, and
         regular notes. The argument list must be the first block in the section.
@@ -205,8 +179,6 @@ class GoogleDocString(DocString):
         """
         import textwrap
 
-        parsed_section = ''
-
         # Get header
         lines = section.split('\n')
         header = self._header().findall(lines[0])
@@ -219,7 +191,7 @@ class GoogleDocString(DocString):
             header = ''
 
         # Get argument list
-        args = self.parse_arglist(section, require_args)
+        args = self.parse_arglist(section)
         if args:
             section = ''
 
@@ -240,16 +212,15 @@ class GoogleDocString(DocString):
 
         sections = []
         section = []
-        headerstr = ''
         header = self._header()
         regex_indent = self._indent()
         prevline = ''
         indent = 0
         current_indent = 0
-        main_indent =0
         is_main = True
         is_section = False
         lines = self.docstring.split('\n')
+
         for i, line in enumerate(lines):
 
             # Compute amount of indentation
@@ -287,13 +258,36 @@ class GoogleDocString(DocString):
         return sections
 
     def parse_arglist(self, section, require=False):
-        # Parse arguments
-        # The format is `variable (optional signature): description`. The
-        # variable and signature is separated from the description using `: `
-        # (including space). Space in the separator is needed to to ensure there
-        # is no clash with restructured text syntax (e.g., :any:). Multiline
-        # line descriptions must be indented using at least `indent` number of
-        # spaces.
+        """
+        Parses the argument list placed at the start of a section.
+
+        The format is `variable (optional signature): description`. The variable
+        and signature is separated from the description using `: ` (including
+        space). Space in the separator is needed to to ensure there is no clash
+        with restructured text syntax (e.g., :any:). Multiline line descriptions
+        must be indented using at least `indent` number of spaces.
+
+        Arguments:
+
+        section : A string that contains the text of the section to parse.
+        require (bool, optional) : If this optional argument is set to `True`,
+            then an exception is raised if parsing fails. Defaults to `False`.
+            Settings this argument to `True` may be useful for parsing sections
+            that like `Arguments` that should always contain any argument list.
+
+        Returns:
+
+        list : Each item in this list is a dictionary that contains the
+            properties of an argument. These properties are the field,
+            signature, and description. If the no list is parsed, then `None` is
+            returned.
+
+        Raises:
+
+        ValueError: This error is raised if `require` is `True` and parsing
+            fails.
+
+        """
 
         pattern = (r'^(\w*)\s*(?:(\(.*\)))*\s*%s' % self.argdelimiter +
                    r'(.*\n?(?:^\s{%s,}.*\n)*)' % self.indent)
@@ -348,21 +342,7 @@ def parser(obj, choice='Google'):
         return parsers[choice](obj)
     else:
         NotImplementedError('The docstring parser `%s` is not implemented' %
-                             choice)
-
-def parse(obj, parser=GoogleDocString):
-    """
-    Parses a docstring using a parser that matches the formatting of the
-    docstring.
-
-    Args:
-        obj : A dictionary that contains the docstring and other properties.
-            This object is typically obtained by calling the `extract` function.
-
-    """
-    parser = parser(obj)
-    docstr = parser.parse()
-    return docstr
+                            choice)
 
 def sanitize(txt):
     """
