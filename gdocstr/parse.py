@@ -70,9 +70,9 @@ class DocString(object):
         This method should be overloaded to specify how to output to plain-text.
         """
         txt = ''
-        if 'class' in self.header:
+        if self.header['class']:
             txt += self.header['class']
-            if 'function' in self.header:
+            if self.header['function']:
                 txt += '.'
         for prop in ['function', 'signature']:
             if prop in self.header:
