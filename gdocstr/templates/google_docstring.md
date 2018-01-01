@@ -8,9 +8,15 @@ ${h1} ${header['class']}.${header['function']}
 ${h1} ${header['function']}
     %endif
 ```python
-def ${header['function']} ${header['signature']}:
+def ${header['function']}${header['signature']}:
+```
+%elif header['class']:
+${h1} ${header['class']}
+```python
+class ${header['class']}${header['signature']}:
 ```
 %endif 
+
 %for section in sections:
     %if section['header']:
 ${h2} ${section['header']}
@@ -22,7 +28,8 @@ ${h2} ${section['header']}
     %endif
 ${section['text']}
 %endfor
-%if header['source']:
+
+%if header['function'] and header['source']:
 ${h2} Source
 ```python
 ${header['source']}
