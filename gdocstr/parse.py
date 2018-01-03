@@ -23,10 +23,10 @@ class DocString(object):
     def __init__(self, docstring, config = None):
         self.header = {}
         # Copy header data from docstring
-        for doc in docstring:
-            if doc != 'docstring':
-                self.header[doc] = docstring[doc]
-        self.docstring = docstring['docstring']
+        #for doc in docstring:
+        #    if doc != 'docstring':
+        #        self.header[doc] = docstring[doc]
+        self.docstring = docstring
         self.headers = ''
         self.data = []
         self.mdtemplate = ''
@@ -41,8 +41,6 @@ class DocString(object):
         self._reindent = self._compile_indent(spaces=4)
         self._indent = 0
         self._sections = []
-
-        self.parse()
 
     def parse(self):
         """
@@ -82,16 +80,17 @@ class DocString(object):
         """
         This method should be overloaded to specify how to output to plain-text.
         """
-        txt = ''
-        if self.header['class']:
-            txt += self.header['class']
-            if self.header['function']:
-                txt += '.'
-        for prop in ['function', 'signature']:
-            if prop in self.header:
-                txt += self.header[prop]
-        txt += self.docstring
-        return txt
+        #TODO: move function signature
+        #txt = ''
+        #if self.header['class']:
+        #    txt += self.header['class']
+        #    if self.header['function']:
+        #        txt += '.'
+        #for prop in ['function', 'signature']:
+        #    if prop in self.header:
+        #        txt += self.header[prop]
+        #txt += self.docstring
+        return self.docstring
 
     def __markdown__(self, filename=None):
         """
@@ -122,11 +121,6 @@ class GoogleDocString(DocString):
 
     def __init__(self, docstring, config = None):
         import os
-        super(GoogleDocString, self).__init__(docstring, config)
-        self.mdtemplate = os.path.join(os.path.dirname(__file__), 'templates/google_docstring.md')
-        self.argdelimiter = ': '
-        self.secdelimiter = ':'
-        self.indent = 2
 
         if not config:
             self.config = {}
@@ -134,11 +128,20 @@ class GoogleDocString(DocString):
                         'Notes|Example|Examples|Attributes|Todo')
             self.config['spaces'] = 4
             self.config['delimiter'] = ':'
+            self.config['argdelimiter'] = ': '
 
+        super(GoogleDocString, self).__init__(docstring, config)
+        self.mdtemplate = os.path.join(os.path.dirname(__file__), 'templates/google_docstring.md')
+        self.argdelimiter = ': '
+        self.secdelimiter = ':'
+        self.indent = 2
 
         self._reheader = self._compile_header(headers=self.config['headers'],
                                               delimiter=self.config['delimiter'])
         self._reindent = self._compile_indent(spaces=self.config['spaces'])
+
+        self.parse()
+
 
     def parse_section(self, section):
         """
@@ -199,6 +202,9 @@ class GoogleDocString(DocString):
             # Compute amount of indentation
             current_indent = self._get_indent(line)
 
+            # Capture indent to be able to remove it from the text and also
+            # to determine when a section ends.
+            # The indent is reset when a new section begins.
             if self._is_indent(line):
                 self._indent = current_indent
 
@@ -216,11 +222,6 @@ class GoogleDocString(DocString):
 
         self._end_section()
         self._begin_section()
-
-        for s in self._sections:
-            print(s)
-            print('--end of section--')
-        assert False
 
     def parse_arglist(self, section, require=False):
         """
@@ -258,8 +259,8 @@ class GoogleDocString(DocString):
         """
         import textwrap
 
-        pattern = (r'^(\w*)\s*(?:(\(.*\)))*\s*%s' % self.argdelimiter +
-                   r'(.*\n?(?:^\s{%s,}.*\n)*)' % self.indent)
+        pattern = (r'^(\w*)\s*(?:(\(.*\)))*\s*%s' % self.config['argdelimiter'] +
+                   r'(.*\n?(?:^\s{%s,}.*\n)*)' % self.config['spaces'])
         matches = re.compile(pattern, re.M).findall(textwrap.dedent(section))
 
         if not matches:
