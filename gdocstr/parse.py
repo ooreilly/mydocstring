@@ -27,10 +27,7 @@ class DocString(object):
         #    if doc != 'docstring':
         #        self.header[doc] = docstring[doc]
         self.docstring = docstring
-        self.headers = ''
         self.data = []
-        self.mdtemplate = ''
-        
         self._config = config
 
         # Internals for parsing
@@ -40,11 +37,10 @@ class DocString(object):
         # parsed.
         # _re .. : Regex functions.
         # _indent : This variable will hold the current indentation (number of spaces).
-        self._section = []
+
+        self._parsing = {'indent' : 0, 'linenum' : 0, 'sections' : [],
+                         'section' : []}
         self._re = {}
-        self._indent = 0
-        self._linenum = 0
-        self._sections = []
 
     def parse(self):
         """
@@ -53,7 +49,7 @@ class DocString(object):
         """
         self.data = []
         self.extract_sections()
-        for section in self._sections:
+        for section in self._parsing['sections']:
             self.data.append(self.parse_section(section))
         return self.data
 
@@ -106,10 +102,10 @@ class DocString(object):
         """
         from mako.template import Template
         if not filename:
-            filename = self.mdtemplate
+            filename = self._config['template']
         template = Template(filename=filename)
         data = self.data
-        headers = self.headers.split('|')
+        headers = self._config['headers'].split('|')
         hd1 = '#'
         hd2 = '##'
         hd3 = '###'
@@ -129,15 +125,16 @@ class GoogleDocString(DocString):
         if not config:
             config = {}
             config['headers'] = ('Args|Arguments|Returns|Yields|Raises|Note|' +
-                   'Notes|Example|Examples|Attributes|Todo')
+                                 'Notes|Example|Examples|Attributes|Todo')
             config['indent'] = 4
             config['delimiter'] = ':'
             config['arg_delimiter'] = ': '
+            config['template'] = os.path.join(os.path.dirname(__file__),
+                                              'templates/google_docstring.md')
 
         super(GoogleDocString, self).__init__(docstring, config)
-        self.mdtemplate = os.path.join(os.path.dirname(__file__), 'templates/google_docstring.md')
 
-        self._re = {'header' : self._compile_header(), 
+        self._re = {'header' : self._compile_header(),
                     'indent' : self._compile_indent(),
                     'arg' : self._compile_arg()}
 
@@ -171,18 +168,18 @@ class GoogleDocString(DocString):
 
         # Skip the first line if it is a header
         header = self._get_header(lines[0])
-        self._linenum = int(bool(header))
+        self._parsing['linenum'] = int(bool(header))
         text = []
 
         args = []
-        while self._linenum < len(lines):
+        while self._parsing['linenum'] < len(lines):
 
             arg_data = self._parse_arglist(lines)
             if arg_data:
                 args.append(arg_data)
             else:
-                text.append(lines[self._linenum])
-            self._linenum += 1
+                text.append(lines[self._parsing['linenum']])
+            self._parsing['linenum'] += 1
 
         out = {}
         out['header'] = header
@@ -199,9 +196,9 @@ class GoogleDocString(DocString):
         """
 
         lines = self.docstring.split('\n')
-        new_section  = True
+        new_section = True
 
-        for ln, line in enumerate(lines):
+        for linenumber, line in enumerate(lines):
             # Compute amount of indentation
             current_indent = self._get_indent(line)
 
@@ -209,54 +206,50 @@ class GoogleDocString(DocString):
             # to determine when a section ends.
             # The indent is reset when a new section begins.
             if new_section and self._is_indent(line):
-                self._indent = current_indent
-                new_section  = False
+                self._parsing['indent'] = current_indent
+                new_section = False
 
             if self._is_header(line):
-                self._err_if_missing_indent(lines, ln)
+                self._err_if_missing_indent(lines, linenumber)
                 self._end_section()
                 self._begin_section()
-                new_section  = True
+                new_section = True
             # Section ends because of a change in indent that is not caused
             # by a line break
-            elif line  and current_indent < self._indent:
+            elif line  and current_indent < self._parsing['indent']:
                 self._end_section()
                 self._begin_section()
 
-            self._section.append(line[self._indent:])
+            self._parsing['section'].append(line[self._parsing['indent']:])
 
         self._end_section()
         self._begin_section()
 
     def _parse_arglist(self, lines, require=False):
-        arg_data = self._get_arg(lines[self._linenum])
+        arg_data = self._get_arg(lines[self._parsing['linenum']])
 
         if not arg_data:
             if require:
                 raise ValueError('Failed to parse argument list:\n `%s` ' %
-                                 (section))
+                                 (self._parsing['section']))
             return None
 
         # Take into account that the description can be multi-line
         # the next line has to be indented
         description = [arg_data[0][2]]
-        next_line = self._get_next_line(lines, self._linenum)
+        next_line = _get_next_line(lines, self._parsing['linenum'])
         while self._is_indent(next_line):
-            self._linenum +=1
-            description.append(lines[self._linenum])
-            next_line = self._get_next_line(lines, self._linenum)
+            self._parsing['linenum'] += 1
+            description.append(lines[self._parsing['linenum']])
+            next_line = _get_next_line(lines, self._parsing['linenum'])
 
-        args = []
-        return {'field' : arg_data[0][0], 
+        return {'field' : arg_data[0][0],
                 'signature' : arg_data[0][1],
                 'description' : '\n'.join(description)}
 
-
-        return argsout
-
     def _compile_header(self):
         return re.compile(r'^\s*(%s)%s\s*'%(self._config['headers'],
-                         self._config['delimiter']))
+                                            self._config['delimiter']))
 
     def _compile_indent(self):
         return re.compile(r'(^\s{%s,})'%self._config['indent'])
@@ -266,21 +259,21 @@ class GoogleDocString(DocString):
                           self._config['arg_delimiter'])
 
 
-    def _err_if_missing_indent(self, lines, ln):
-        next_line = self._get_next_line(lines, ln)
+    def _err_if_missing_indent(self, lines, linenumber):
+        next_line = _get_next_line(lines, linenumber)
         is_next_indent = self._is_indent(next_line)
         if not is_next_indent:
             raise SyntaxError("Missing indent after `%s`" %
-                    next_line)
+                              next_line)
 
     def _begin_section(self):
-        self._section = []
-        self._indent = 0
+        self._parsing['section'] = []
+        self._parsing['indent'] = 0
 
     def _end_section(self):
-        section_text = '\n'.join(self._section)
+        section_text = '\n'.join(self._parsing['section'])
         if section_text.strip():
-            self._sections.append(section_text)
+            self._parsing['sections'].append(section_text)
 
     def _get_indent(self, line):
         """
@@ -314,19 +307,19 @@ class GoogleDocString(DocString):
     def _is_arg(self, line):
         return bool(self._re['arg'].findall(line))
 
-    def _get_next_line(self, lines, ln):
-        """
-        Returns the next line but skips over any empty lines. 
-        An empty line is returned if read past the last line.
-        """
-        inc = ln + 1
-        num_lines = len(lines)
-        while True:
-            if inc == num_lines:
-                return ''
-            if lines[inc]:
-                return lines[inc]
-            inc += 1
+def _get_next_line(lines, linenumber):
+    """
+    Returns the next line but skips over any empty lines.
+    An empty line is returned if read past the last line.
+    """
+    inc = linenumber + 1
+    num_lines = len(lines)
+    while True:
+        if inc == num_lines:
+            return ''
+        if lines[inc]:
+            return lines[inc]
+        inc += 1
 
 def parser(obj, choice='Google'):
     """

@@ -17,7 +17,7 @@ def get_docstring1():
     """Args:
         arg1 (`int`): This description for this argument fits on one line.
         arg2 (`int`, optional): This description is too long to fit on a 
-            single line. Note that it is continued by being indented. 
+            single line. Note that it is continued by being indented.
     """
     )
     docstring.append(
@@ -38,48 +38,49 @@ def test_arguments():
     google = setup_google()
     docstr = google.parse()
 
-    print(docstr)
     args = docstr[1]
-    args['args'][0]['field'] == 'arg1'
-    args['args'][0]['signature'] == ['type']
-    args['args'][0]['description'] == 'description for arg1'
-    args['args'][1]['field'] == 'arg2'
-    args['args'][1]['signature'] == ['']
-    args['args'][1]['description'] == 'description for arg2'
+    assert args['args'][0]['field'] == 'arg1'
+    assert args['args'][0]['signature'] == '(type)'
+    assert args['args'][0]['description'] == 'description for arg1.'
+    assert args['args'][1]['field'] == 'arg2'
+    assert args['args'][1]['signature'] == ''
+    assert args['args'][1]['description'] == """description for arg2
+    that spans multiple lines."""
 
 def test_extract_sections():
     import re
     google = setup_google()
 
     
-    len(google._sections) == 4
+    len(google._parsing['sections']) == 4
     txt = get_docstring1()
     google = parse.GoogleDocString('\n'.join(txt))
+    google.parse()
 
     expr = ['Short description','Example of a function with a doc string.']
 
     for ex in expr:
-        assert re.compile(ex, re.M).findall(google._sections[0])
+        assert re.compile(ex, re.M).findall(google._parsing['sections'][0])
 
     # Too difficult to get exact match, so result to approximate match by
     # checking for key features such as text for more than a single line.
     expr = ['arg1', '(`int`)', 
             'This description for this argument fits on one line.']
     for ex in expr:
-        assert re.compile(ex, re.M).findall(google._sections[1])
+        assert re.compile(ex, re.M).findall(google._parsing['sections'][1])
 
     expr = ['arg2', '(`int`, optional)', 'continued by being indented.']
     for ex in expr:
-        assert re.compile(ex, re.M).findall(google._sections[1])
+        assert re.compile(ex, re.M).findall(google._parsing['sections'][1])
 
     expr = ['bool', 'Defaults to', 
             'It is important that this description is indented.']
     for ex in expr:
-        assert re.compile(ex, re.M).findall(google._sections[2])
+        assert re.compile(ex, re.M).findall(google._parsing['sections'][2])
 
     expr = ['This text is no longer indented and therefore']
     for ex in expr:
-        assert re.compile(ex, re.M).findall(google._sections[3])
+        assert re.compile(ex, re.M).findall(google._parsing['sections'][3])
 
 def test_parse_sections():
     google = setup_google()
