@@ -20,7 +20,7 @@ class DocString(object):
 
     """
 
-    def __init__(self, docstring):
+    def __init__(self, docstring, config = None):
         self.header = {}
         # Copy header data from docstring
         for doc in docstring:
@@ -31,6 +31,19 @@ class DocString(object):
         self.data = []
         self.mdtemplate = ''
 
+        # Internals for parsing
+        # _section : This variable will hold the contents of each unparsed section
+        # _sections : A list that will hold all unparsed sections.
+        # _re .. : Regex functions.
+        # _indent : This variable will hold the current indentation (number of spaces).
+        self._section = []
+        self._reheader = self._compile_header()
+        self._reindent = self._compile_indent(spaces=4)
+        self._indent = 0
+        self._sections = []
+
+        self.parse()
+
     def parse(self):
         """
         This method should be overloaded and perform the parsing of all
@@ -38,7 +51,7 @@ class DocString(object):
         """
         self.data = []
         sections = self.extract_sections()
-        for section in sections:
+        for section in self._sections:
             self.data.append(self.parse_section(section))
         return self.data
 
@@ -107,56 +120,25 @@ class GoogleDocString(DocString):
     to the Google style guide: .
     """
 
-    def __init__(self, docstring):
-        self.template = 'templates/google_docstring.md'
-        super(GoogleDocString, self).__init__(docstring)
-        self.headers = ('Args|Arguments|Returns|Yields|Raises|Note|' +
-                        'Notes|Example|Examples|Attributes|Todo')
-        self.mdtemplate = 'templates/google_docstring.md'
+    def __init__(self, docstring, config = None):
+        import os
+        super(GoogleDocString, self).__init__(docstring, config)
+        self.mdtemplate = os.path.join(os.path.dirname(__file__), 'templates/google_docstring.md')
         self.argdelimiter = ': '
         self.secdelimiter = ':'
         self.indent = 2
 
-    def extract_section(self, keywords='Args|Arguments', require=False):
-        """
-        Extracts a section from the docstring.
+        if not config:
+            self.config = {}
+            self.config['headers'] = ('Args|Arguments|Returns|Yields|Raises|Note|' +
+                        'Notes|Example|Examples|Attributes|Todo')
+            self.config['spaces'] = 4
+            self.config['delimiter'] = ':'
 
-        Args:
-            keywords (str, optional): This string specifies all aliases for the
-                the section. Each alias is separated by |. Defaults to
-                `'Args|Arguments'`.
-            require (bool, optional): Issue a warning if the section is not
-            found and this section is required. Defaults to False.
-        """
-        import warnings
-        import textwrap
-        docstring = textwrap.dedent(self.docstring).strip()
 
-        # A section starts with `keyword` + delimiter and the contents of the
-        # section are indented. The section ends after the indent.
-        header = re.compile(r'(?:%s)%s\s*'%(keywords, self.secdelimiter))
-        indent = re.compile(r'(^\s{%s,})'%self.indent)
-
-        issection = False
-        txt = []
-        for line in docstring.split('\n'):
-            # Add section contents as long as it is indented
-            # or if it is blank
-            if issection:
-                if indent.findall(line) or not line:
-                    txt.append(line)
-                else:
-                    break
-
-            if header.findall(line):
-                issection = True
-
-        if not issection and require:
-            warnings.warn(r'Unable to find section `%s`' %
-                          keywords)
-            return None
-
-        return textwrap.dedent('\n'.join(txt))
+        self._reheader = self._compile_header(headers=self.config['headers'],
+                                              delimiter=self.config['delimiter'])
+        self._reindent = self._compile_indent(spaces=self.config['spaces'])
 
     def parse_section(self, section):
         """
@@ -183,7 +165,7 @@ class GoogleDocString(DocString):
 
         # Get header
         lines = section.split('\n')
-        header = self._header().findall(lines[0])
+        header = self._compile_header().findall(lines[0])
         if header:
             header = header[0]
             # Remove the header from section
@@ -210,53 +192,35 @@ class GoogleDocString(DocString):
         `Returns`. All text within  a section is indented and the section ends
         after the indention.
         """
-        import textwrap
 
-        sections = []
-        section = []
-        header = self._header()
-        regex_indent = self._indent()
-        indent = 0
-        current_indent = 0
-        is_section = False
-        new_section = False
         lines = self.docstring.split('\n')
 
-        def inline_new_section(section, sections):
-            """
-            Inline function for creating new section.
-            """
-            # Close the previous section
-            section_text = '\n'.join(section)
-            if section_text:
-                sections.append(section_text)
-            # and start the next one
-            section = []
-            indent = 0
-            return indent, section, sections
-
-        for line in lines:
+        for ln, line in enumerate(lines):
             # Compute amount of indentation
-            current_indent = get_indent(regex_indent, line)
+            current_indent = self._get_indent(line)
 
-            if new_section and current_indent > 0:
-                new_section = False
-                indent = current_indent
+            if self._is_indent(line):
+                self._indent = current_indent
 
-            if header.findall(line):
-                is_section = True
-                indent, section, sections = inline_new_section(section, sections)
-                new_section = True
+            if self._is_header(line):
+                self._err_if_missing_indent(lines, ln)
+                self._end_section()
+                self._begin_section()
             # Section ends because of a change in indent that is not caused
             # by a line break
-            elif line and is_section and current_indent < indent:
-                is_section = False
-                indent, section, sections = inline_new_section(section, sections)
+            elif line  and current_indent < self._indent:
+                self._end_section()
+                self._begin_section()
 
-            section.append(line[indent:])
+            self._section.append(line[self._indent:])
 
-        indent, section, sections = inline_new_section(section, sections)
-        return sections
+        self._end_section()
+        self._begin_section()
+
+        for s in self._sections:
+            print(s)
+            print('--end of section--')
+        assert False
 
     def parse_arglist(self, section, require=False):
         """
@@ -313,11 +277,86 @@ class GoogleDocString(DocString):
                             'description' : description})
         return argsout
 
-    def _header(self):
-        return re.compile(r'^\s*(%s)%s\s*'%(self.headers, self.secdelimiter))
+    def _compile_header(self, headers='\w+', delimiter=': '):
+        return re.compile(r'^\s*(%s)%s\s*'%(headers, delimiter))
 
-    def _indent(self):
-        return re.compile(r'(^\s{%s,})'%self.indent)
+    def _compile_indent(self, spaces=4):
+        return re.compile(r'(^\s{%s,})'%spaces)
+
+
+    def _err_if_missing_indent(self, lines, ln):
+        next_line = self._get_next_line(lines, ln)
+        is_next_indent = self._is_indent(next_line)
+        if not is_next_indent:
+            raise SyntaxError("Missing indent after `%s`" %
+                    next_line)
+
+    def _begin_section(self):
+        self._section = []
+        self._indent = 0
+
+    def _end_section(self):
+        section_text = '\n'.join(self._section)
+        if section_text:
+            self._sections.append(section_text)
+
+    def _get_indent(self, line):
+        """
+        Returns the indentation size.
+        """
+        indent_size = self._reindent.findall(line)
+        if indent_size:
+            return len(indent_size[0])
+        else:
+            return 0
+
+    def _is_new_main_section(self, line, is_next_indent):
+        if not self._is_new_section and self._is_indent(line) and not is_next_indent:
+            return True
+        else:
+            return False
+
+
+
+    def _set_indent(self, line):
+        self._indent = indent
+
+    def _is_indent(self, line):
+        """
+        Returns if the line is indented or not.
+        """
+        indent = self._get_indent(line)
+        if indent > 0:
+            return True
+        else:
+            return False
+
+    def _is_header(self, line):
+        if self._reheader.findall(line):
+            return True
+        else:
+            return False
+
+    def _is_section(self, line):
+        return self._is_indent(line)
+
+    def _get_next_line(self, lines, ln):
+        """
+        Returns the next line but skips over any empty lines. 
+        An empty line is returned if read past the last line.
+        """
+        inc = ln + 1
+        num_lines = len(lines)
+        while True:
+            if inc == num_lines:
+                return ''
+            if lines[inc]:
+                return lines[inc]
+            inc += 1
+
+        
+
+
 
 def parser(obj, choice='Google'):
     """
@@ -336,8 +375,6 @@ def parser(obj, choice='Google'):
     Raises:
         NotImplementedError : This exception is raised when no parser is found.
 
-
-
     """
     parsers = {'Google' : GoogleDocString}
 
@@ -353,13 +390,3 @@ def summary(txt):
     """
     lines = txt.split('\n')
     return lines[0]
-
-def get_indent(regex, txt):
-    """
-    Returns the indentation size.
-    """
-    indent_size = regex.findall(txt)
-    if indent_size:
-        return len(indent_size[0])
-    else:
-        return 0
