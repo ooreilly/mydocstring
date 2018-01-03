@@ -1,9 +1,9 @@
 # MyDocstring
-[MyDocstring](README.md) is a small Python package that allows you to extract docstrings display them as either plain-text, [markdown](http://commonmark.org/), or [JSON](https://www.json.org/) data.
+[MyDocstring](README.md) is a small Python package that allows you to extract docstrings display them as either plain-text, [Markdown](http://commonmark.org/), or [JSON](https://www.json.org/) data.
 
 * Support for Python-code  (support for C-code is planned).
 * Support for [Google-style docstrings](http://google.github.io/styleguide/pyguide.html)
-* Produces [JSON](https://www.json.org/), plain-text, and [markdown](http://commonmark.org/) output for modules, classes, functions, and
+* Produces [JSON](https://www.json.org/), plain-text, and [Markdown](http://commonmark.org/) output for modules, classes, functions, and
   methods.
 
 ## Getting Started
@@ -11,7 +11,7 @@ You can begin extracting and converting docstrings using the command line tool
 `mydocstring` that comes with package. Simply type `mydocstring --help` to see how to use it. 
 
 Let's extract the docstring from the following example code and convert it to
-markdown:
+Markdown:
 ```python
 def example_function(arg1, arg2=1):
     """
@@ -31,7 +31,7 @@ A more detailed example code is found in [examples/example.py](examples/example.
 $ docstring examples/example.py example_function --markdown > examples/example_py.md
 ```
 Go to [examples/example_py.md](examples/example_py.md) to
-view the output. If you are not satisfied with the resulting markdown, you can provide your own
+view the output. If you are not satisfied with the resulting Markdown, you can provide your own
 [mako](http://makotemplates.org) template
 
 ```
