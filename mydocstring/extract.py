@@ -135,7 +135,11 @@ class Extract(object):
             signature = matches[0][2]
             indent = len(matches[0][3])
             docstring = remove_indent(matches[0][4], indent)
-            source = textwrap.dedent('def ' + function + signature + ':\n' + matches[0][5])
+            if self.dtype == 'function' or self.dtype == 'method': 
+                source = textwrap.dedent('def ' + function + signature + ':\n' +
+                                         matches[0][5]) 
+            else: 
+                source = ''
 
             out = {}
             out['class'] = cls
@@ -155,7 +159,7 @@ class PyExtract(Extract):
     """
 
     def extract_function(self):
-        pattern = (r'^\s*()def\s(%s)(\((?!self)[:=,\s\w]*\)):' % self.funcname
+        pattern = (r'^\s*()def\s(%s)(\((?!self).*\)):.*' % self.funcname
                    + r'\n*(\s+)"""([\w\W]*?)"""\n((\4.*\n+)+)?')
         return self.find(pattern)
 
@@ -166,7 +170,7 @@ class PyExtract(Extract):
 
     def extract_method(self):
         pattern = (r'class\s+(%s)\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
-                   r'[\n\s]+def\s+(%s)(\(self[:=\w,\s]*\)):\n' % self.funcname +
+                   r'[\n\s]+def\s+(%s)(\(self.*\)):.*\n' % self.funcname +
                    r'(\s+)"""([\w\W]*?)"""\n((?:\4.*\n+)+)?')
         return self.find(pattern)
 

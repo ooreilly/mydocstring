@@ -13,7 +13,7 @@ If you are contributing new code, then
    reports via `pylint my_feature.py --reports=n` and then enable again once all
    issues have been corrected. Make sure that you test all parts of your code
    using a coverage tool such as `py-cov`.
-3. Update [ACKNOWLEDGMENTS](ACKNOWLEDGMENTS.md) to make sure you get credit for
+3. Update [CONTRIBUTORS](CONTRIBUTORS.md) to make sure you get credit for
    your contribution. 
 4. Update [README](README.md) to explain how to use your feature.
 5. Make all your commits to your feature branch and check that all tests pass.

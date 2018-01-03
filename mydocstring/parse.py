@@ -22,10 +22,6 @@ class DocString(object):
 
     def __init__(self, docstring, config=None):
         self.header = {}
-        # Copy header data from docstring
-        #for doc in docstring:
-        #    if doc != 'docstring':
-        #        self.header[doc] = docstring[doc]
         self.docstring = docstring
         self.data = []
         self._config = config
@@ -80,37 +76,19 @@ class DocString(object):
         """
         This method should be overloaded to specify how to output to plain-text.
         """
-        #TODO: move function signature
-        #txt = ''
-        #if self.header['class']:
-        #    txt += self.header['class']
-        #    if self.header['function']:
-        #        txt += '.'
-        #for prop in ['function', 'signature']:
-        #    if prop in self.header:
-        #        txt += self.header[prop]
-        #txt += self.docstring
         return self.docstring
 
-    def __markdown__(self, filename=None):
+    def markdown(self):
         """
-        Output docstring as markdown using a template.
+        Output data relevant data needed for markdown rendering.
 
         Args:
             filename (str, optional) : select template to use for markdown
                 rendering.
         """
-        from mako.template import Template
-        if not filename:
-            filename = self._config['template']
-        template = Template(filename=filename)
         data = self.data
         headers = self._config['headers'].split('|')
-        hd1 = '#'
-        hd2 = '##'
-        hd3 = '###'
-        return template.render(header=self.header, sections=data,
-                               headers=headers, h1=hd1, h2=hd2, h3=hd3)
+        return headers, data
 
 
 class GoogleDocString(DocString):
@@ -129,8 +107,6 @@ class GoogleDocString(DocString):
             config['indent'] = 4
             config['delimiter'] = ':'
             config['arg_delimiter'] = ': '
-            config['template'] = os.path.join(os.path.dirname(__file__),
-                                              'templates/google_docstring.md')
 
         super(GoogleDocString, self).__init__(docstring, config)
 

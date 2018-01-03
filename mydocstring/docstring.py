@@ -1,17 +1,18 @@
 """
-docstring
+docstringout
 
 Usage:
-  docstring <file> <name> [-tmj]
-  docstring -h | --help
-  docstring --version
+  docstringout <file> <name> [-tmj] [-T=<tpl>]
+  docstringout -h | --help
+  docstringout --version
 
 Options:
   -h --help                         Show help (this screen).
   --version                         Show version.
-  -m --markdown                     Render docstring as Markdown.
-  -t --text                         Render docstring as text.
-  -j --json                         Render docstring as JSON.
+  -m --markdown                     Output extracted docstring as Markdown.
+  -t --text                         Output extracted docstring as plain-text.
+  -j --json                         Output extracted docstring as JSON.
+  -T=<tpl> --template=<tpl>         Set template for Markdown output.
 
 Examples:
   Extract the module docstring
@@ -25,7 +26,7 @@ Examples:
 
 Help:
   Please see the issue tracker for the Github repository:
-  https://github.com/ooreilly/docstring
+  https://github.com/ooreilly/docstringout
 """
 from docopt import docopt
 from . import command
