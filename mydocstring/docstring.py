@@ -1,10 +1,10 @@
 """
-docstringout
+mydocstring
 
 Usage:
-  docstringout <file> <name> [-tmj] [-T=<tpl>]
-  docstringout -h | --help
-  docstringout --version
+  mydocstring <file> <name> [-tmj] [-T=<tpl>]
+  mydocstring -h | --help
+  mydocstring --version
 
 Options:
   -h --help                         Show help (this screen).
@@ -16,13 +16,13 @@ Options:
 
 Examples:
   Extract the module docstring
-    docstring module.py . --markdown
+    mydocstring module.py . --markdown
   Extract a module function docstring
-    docstring module.py function --markdown
+    mydocstring module.py function --markdown
   Extract a class docstring
-    docstring module.py Class --markdown
+    mydocstring module.py Class --markdown
   Extract a method docstring
-    docstring module.py Class.method --markdown
+    mydocstring module.py Class.method --markdown
 
 Help:
   Please see the issue tracker for the Github repository:
