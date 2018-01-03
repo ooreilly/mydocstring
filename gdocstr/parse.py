@@ -36,11 +36,14 @@ class DocString(object):
         # Internals for parsing
         # _section : This variable will hold the contents of each unparsed section
         # _sections : A list that will hold all unparsed sections.
+        # _linenum : line number relative to the current section being
+        # parsed.
         # _re .. : Regex functions.
         # _indent : This variable will hold the current indentation (number of spaces).
         self._section = []
         self._re = {}
         self._indent = 0
+        self._linenum = 0
         self._sections = []
 
     def parse(self):
@@ -129,7 +132,7 @@ class GoogleDocString(DocString):
                    'Notes|Example|Examples|Attributes|Todo')
             config['indent'] = 4
             config['delimiter'] = ':'
-            config['argdelimiter'] = ': '
+            config['arg_delimiter'] = ': '
 
         super(GoogleDocString, self).__init__(docstring, config)
         self.mdtemplate = os.path.join(os.path.dirname(__file__), 'templates/google_docstring.md')
@@ -137,8 +140,6 @@ class GoogleDocString(DocString):
         self._re = {'header' : self._compile_header(), 
                     'indent' : self._compile_indent(),
                     'arg' : self._compile_arg()}
-
-        self.parse()
 
 
     def parse_section(self, section):
@@ -162,27 +163,30 @@ class GoogleDocString(DocString):
             ```
 
         """
-        import textwrap
 
         # Get header
         lines = section.split('\n')
         header = self._compile_header().findall(lines[0])
-        if header:
-            header = header[0]
-            # Remove the header from section
-            lines = lines[1:]
-            section = '\n'.join(lines)
-        else:
-            header = ''
 
-        # Get argument list
-        args = self.parse_arglist(section)
-        if args:
-            section = ''
+
+        # Skip the first line if it is a header
+        header = self._get_header(lines[0])
+        self._linenum = int(bool(header))
+        text = []
+
+        args = []
+        while self._linenum < len(lines):
+
+            arg_data = self._parse_arglist(lines)
+            if arg_data:
+                args.append(arg_data)
+            else:
+                text.append(lines[self._linenum])
+            self._linenum += 1
 
         out = {}
         out['header'] = header
-        out['text'] = section
+        out['text'] = '\n'.join(text)
         out['args'] = args
         return out
 
@@ -195,6 +199,7 @@ class GoogleDocString(DocString):
         """
 
         lines = self.docstring.split('\n')
+        new_section  = True
 
         for ln, line in enumerate(lines):
             # Compute amount of indentation
@@ -203,13 +208,15 @@ class GoogleDocString(DocString):
             # Capture indent to be able to remove it from the text and also
             # to determine when a section ends.
             # The indent is reset when a new section begins.
-            if self._is_indent(line):
+            if new_section and self._is_indent(line):
                 self._indent = current_indent
+                new_section  = False
 
             if self._is_header(line):
                 self._err_if_missing_indent(lines, ln)
                 self._end_section()
                 self._begin_section()
+                new_section  = True
             # Section ends because of a change in indent that is not caused
             # by a line break
             elif line  and current_indent < self._indent:
@@ -221,64 +228,30 @@ class GoogleDocString(DocString):
         self._end_section()
         self._begin_section()
 
-    def parse_arglist(self, section, require=False):
-        """
-        Parses the argument list placed at the start of a section.
+    def _parse_arglist(self, lines, require=False):
+        arg_data = self._get_arg(lines[self._linenum])
 
-        The format is `variable (optional signature): description`. The variable
-        and signature is separated from the description using `: ` (including
-        space). Space in the separator is needed to to ensure there is no clash
-        with restructured text syntax (e.g., :any:). Multiline line descriptions
-        must be indented using at least `indent` number of spaces.
-
-        Arguments:
-
-            section : A string that contains the text of the section to parse.
-            require (bool, optional) : If this optional argument is set to
-                `True`, then an exception is raised if parsing fails. Defaults
-                to `False`. Setting this argument to `True` may be useful for
-                parsing sections like `Arguments` that should always contain an
-                argument list.
-
-        Returns:
-
-            list : Each item in this list is a dictionary that contains the
-                properties of an argument. These properties are the field,
-                signature, and description. If the no list is parsed, then
-                `None` is returned.
-            what is this?
-
-        Raises:
-
-            ValueError : This error is raised if `require` is `True` and parsing
-                fails.
-
-
-        """
-        import textwrap
-
-        pattern = (r'^(\w*)\s*(\(.*\))?\s*%s' % self._config['argdelimiter'] +
-                   r'(.*\n?(?:^\s{%s,}.*\n)*)' % self._config['indent'])
-        matches = re.compile(pattern, re.M).findall(textwrap.dedent(section))
-
-        if not matches:
+        if not arg_data:
             if require:
                 raise ValueError('Failed to parse argument list:\n `%s` ' %
                                  (section))
             return None
 
-        lines = self._section
+        # Take into account that the description can be multi-line
+        # the next line has to be indented
+        description = [arg_data[0][2]]
+        next_line = self._get_next_line(lines, self._linenum)
+        while self._is_indent(next_line):
+            self._linenum +=1
+            description.append(lines[self._linenum])
+            next_line = self._get_next_line(lines, self._linenum)
 
-        for line in lines:
-            pass
+        args = []
+        return {'field' : arg_data[0][0], 
+                'signature' : arg_data[0][1],
+                'description' : '\n'.join(description)}
 
-        argsout = []
-        for match in matches:
-            field = match[0]
-            signature = match[1]
-            description = match[2].rstrip()
-            argsout.append({'field' : field, 'signature' : signature,
-                            'description' : description})
+
         return argsout
 
     def _compile_header(self):
@@ -289,7 +262,8 @@ class GoogleDocString(DocString):
         return re.compile(r'(^\s{%s,})'%self._config['indent'])
 
     def _compile_arg(self):
-        pass
+        return re.compile(r'(\w*)\s*(\(.*\))?\s*%s(.*)' %
+                          self._config['arg_delimiter'])
 
 
     def _err_if_missing_indent(self, lines, ln):
@@ -305,7 +279,7 @@ class GoogleDocString(DocString):
 
     def _end_section(self):
         section_text = '\n'.join(self._section)
-        if section_text:
+        if section_text.strip():
             self._sections.append(section_text)
 
     def _get_indent(self, line):
@@ -327,6 +301,18 @@ class GoogleDocString(DocString):
 
     def _is_header(self, line):
         return bool(self._re['header'].findall(line))
+
+    def _get_header(self, line):
+        header = self._re['header'].findall(line)
+        if header:
+            return header[0]
+        else:
+            return ''
+    def _get_arg(self, line):
+        return self._re['arg'].findall(line)
+
+    def _is_arg(self, line):
+        return bool(self._re['arg'].findall(line))
 
     def _get_next_line(self, lines, ln):
         """
