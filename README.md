@@ -5,13 +5,10 @@ to serve as a basic building-block for building customized documentation
 systems. Simply put, [Docstring](README.md) extracts and parses docstrings and
 gives you access to their data so you can decide what you want to do with it.
 
-* Support for `C` and `Python` code.
+* Support for `Python` code  (support `C` is planned).
 * Support for [Google-style docstrings](http://google.github.io/styleguide/pyguide.html)
 * Produces [JSON](https://www.json.org/), plain-text, and [markdown](http://commonmark.org/) output for modules, classes, functions, and
   methods.
-
-If you are interested in learning about what motivated me to develop this
-package, you can read my story [here](motivation.md).
 
 ## Contents
   * [Getting Started](#getting-started)
@@ -37,16 +34,17 @@ $ docstring --help
 docstring
 
 Usage:
-  docstring <file> <name> [-tmj]
+  docstring <file> <name> [-tmj] [-T=<tpl>]
   docstring -h | --help
   docstring --version
 
 Options:
   -h --help                         Show help (this screen).
   --version                         Show version.
-  -m --markdown                     Render docstring as Markdown.
-  -t --text                         Render docstring as text.
-  -j --json                         Render docstring as JSON.
+  -m --markdown                     Output extracted docstring as Markdown.
+  -t --text                         Output extracted docstring as plain-text.
+  -j --json                         Output extracted docstring as JSON.
+  -T=<tpl> --template=<tpl>         Set template for Markdown output.
 
 Examples:
   Extract the module docstring
@@ -63,12 +61,6 @@ Help:
   https://github.com/ooreilly/docstring
 ```
 
-### Python Examples
-In this example, we will extract a docstring from `example.py` and output it as
-plain-text, markdown, and JSON. Note that the tool works by locating the source
-file directly, no module imports are needed.
-
-The code for `example.py`can be found in [examples/example.py](examples/example.py) and is given by
 ```python
 def example_function(arg1, arg2=1):
     """
@@ -94,16 +86,15 @@ def example_function(arg1, arg2=1):
 
     Raises:
 
-        ValueError: This is exception is raised when arg1 and arg2 are the same.
+        ValueError: This is exception is raised when arg1 and arg2 are equal.
 
     """
     if arg1 == arg2:
-        raise ValueError("`arg1` and `arg2` cannot be the same")
+        raise ValueError("`arg1` and `arg2` cannot be equal.")
     if arg1 > arg2:
         return True
     else: 
         return False
-
 ```
 
 #### Plain-text
@@ -146,7 +137,7 @@ format the data)
 $ docstring examples/example.py --json > examples/example_py.md
 
 ```
-Go to [examples/module_level_function.json](examples/module_level_function.json) to
+Go to [examples/example_py.json](examples/example_py.json) to
 view the output for this example.
 
 ### Installing
@@ -194,13 +185,13 @@ new issue if you want to suggest a new feature. Ideally, post a feature
 request to discuss it before you implement it and make a pull request. 
 
 If you are contributing new code, then 
-1. Make sure to fork the repository and create a new branch `git checkout -b
-   my_feature`. 
-2. Implement your feature and prepare a test case using `pytest` to demonstrate
-   how your feature works and that it performs according to expectations.
+1. First, fork the repository and create your own branch. Commit your changes to
+   this branch. 
+2. In your commit, please include a test case that demonstrates that your
+   contribution works as expected using `pytest`.
    Having a test case will make it easier to review your code and therefore lead
-   to your pull request being approved faster.  Also use `pylint` to check
-   syntax and code quality. During development it is usually simplest to disable
+   to your pull request being approved faster.  Please also use `pylint` to check
+   for issues. During development it is usually simplest to disable
    reports via `pylint my_feature.py --reports=n` and then enable again once all
    issues have been corrected. Make sure that you test all parts of your code
    using a coverage tool such as `py-cov`.
@@ -234,10 +225,6 @@ These are some projects that inspired me to develop this tool.
   comments into Doxygen's syntax.
 * [docsify](https://github.com/QingWei-Li/docsify/) Markdown-based documentation
   site generator.
-
-These posts were also a source of inspiration:
-* [ ] 
-
 
 ## License
 
