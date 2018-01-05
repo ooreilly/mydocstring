@@ -12,6 +12,7 @@ setup(name='mydocstring',
       entry_points = {
              'console_scripts': [
                  'mydocstring=mydocstring.docstring:main',
-             ],
-         },
+             ],},
+      package_data={'mydocstring': ['templates/google_docstring.md']}, 
+         
       zip_safe=False)
