@@ -14,6 +14,12 @@ class Command(object):
         from . import extract
         from . import parse
         self.filename = options['<file>']
+        self.options = {}
+
+        if options['--version']:
+            self.version()
+            return
+
         if options['<name>'] == '.':
             self.name = ''
         else:
@@ -23,7 +29,8 @@ class Command(object):
         self.parser.parse()
         self.options = {'--text' : self.text,
                         '--markdown' : self.markdown,
-                        '--json' : self.json}
+                        '--json' : self.json
+                        }
 
         if options['--template']:
             self.template = options['--template'][1:]
@@ -78,3 +85,10 @@ class Command(object):
         Output docstring as JSON data.
         """
         print(self.parser.__json__())
+
+    def version(self):
+        """
+        Output current version number.
+        """
+        from . import version
+        print(version.__VERSION__)
