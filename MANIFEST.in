@@ -1,2 +1,3 @@
 include mydocstring/*.py
+include mydocstring/templates/*.md
 include mydocstring/tests/*.py
