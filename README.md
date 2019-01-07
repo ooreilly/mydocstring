@@ -52,7 +52,7 @@ If you end up using this tool in your project in one way or another. I would
 love to hear about it and showcase it here. Please go ahead and make a pull
 request. 
 
-* [NetKet](https://www.netket.org) is a open-source project for machine learning and
+* [NetKet](https://www.netket.org) is an open-source project for machine learning and
   many-body quantum systems. It uses *mydocstring* for generating reference
   documentation from [pybind11](https://github.com/pybind/pybind11) docstrings.
   See
