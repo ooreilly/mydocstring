@@ -1,0 +1,56 @@
+[
+    {
+        "args": [],
+        "header": "",
+        "text": "\n\nThis is an example of a docstring that conforms to the Google style guide. \nThe indentation uses four spaces (no tabs). Note that each section starts\nwith a header such as `Arguments` or `Returns` and its contents is indented.\n"
+    },
+    {
+        "args": [
+            {
+                "description": "This description for this argument fits on one line.",
+                "field": "arg1",
+                "signature": "int"
+            },
+            {
+                "description": "This description is too long to fit on a\n    single line. Note that it is continued by being indented. ",
+                "field": "arg2",
+                "signature": "int =1"
+            }
+        ],
+        "header": "Arguments",
+        "text": ""
+    },
+    {
+        "args": [
+            {
+                "description": "Stating the return type here is optional.",
+                "field": "",
+                "signature": "bool"
+            }
+        ],
+        "header": "Returns",
+        "text": "\nWe can continue putting explanations in this section as long as the text\nis indented.\n"
+    },
+    {
+        "args": [],
+        "header": "",
+        "text": "This text is no longer indented and therefore not part of the `Returns`\nsection.\n"
+    },
+    {
+        "args": [
+            {
+                "description": "This is exception is raised when arg1 and arg2 are equal.",
+                "field": "ValueError",
+                "signature": ""
+            }
+        ],
+        "header": "Raises",
+        "text": ""
+    },
+    {
+        "args": [],
+        "header": "Examples",
+        "text": "\nCode block 1.\n>>> a = 0\n>>> a\n0\n\nCode block 2.\n>>> b = 1\n>>> b\n1\n\n"
+    },
+    {}
+]

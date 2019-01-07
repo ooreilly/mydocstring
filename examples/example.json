@@ -18,7 +18,7 @@
             }
         ],
         "header": "Arguments",
-        "text": "\n"
+        "text": ""
     },
     {
         "args": [
@@ -29,7 +29,7 @@
             }
         ],
         "header": "Returns",
-        "text": "\n\nWe can continue putting explanations in this section as long as the text\nis indented.\n"
+        "text": "\nWe can continue putting explanations in this section as long as the text\nis indented.\n"
     },
     {
         "args": [],
@@ -39,13 +39,18 @@
     {
         "args": [
             {
-                "description": "This is exception is raised when arg1 and arg2 are the same.",
+                "description": "This is exception is raised when arg1 and arg2 are equal.",
                 "field": "ValueError",
                 "signature": ""
             }
         ],
         "header": "Raises",
-        "text": "\n\n"
+        "text": ""
+    },
+    {
+        "args": [],
+        "header": "Examples",
+        "text": "\nCode block 1.\n>>> a = 0\n>>> a\n0\n\nCode block 2.\n>>> b = 1\n>>> b\n1\n\n"
     },
     {}
 ]

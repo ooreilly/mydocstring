@@ -48,8 +48,10 @@ class Command(object):
         else:
             self.name = options['<name>']
         self.docstring = extract.extract(self.filename, self.name)
-        self.parser = parse.parser(self.docstring['docstring'], 'Google')
-        self.parser.parse()
+        self.parser = parse.parser(self.docstring['docstring'], 'Google',
+                      args=parse.parse_signature(self.docstring['signature']),
+                      returns=self.docstring['return_type'])
+
         self.options = {'--text' : self.text,
                         '--markdown' : self.markdown,
                         '--json' : self.json
@@ -80,6 +82,8 @@ class Command(object):
         Output docstring as plain-text.
         """
         txt = ''
+
+        self.parser.parse()
         if self.docstring['class']:
             txt += self.docstring['class']
             if self.docstring['function']:
@@ -99,6 +103,7 @@ class Command(object):
         hd1 = '#'
         hd2 = '##'
         hd3 = '###'
+        self.parser.parse(mark_code_blocks=True)
         headers, data = self.parser.markdown()
         print(template.render(header=self.docstring, sections=data,
                               headers=headers, h1=hd1, h2=hd2, h3=hd3))
@@ -107,6 +112,7 @@ class Command(object):
         """
         Output docstring as JSON data.
         """
+        self.parser.parse()
         print(self.parser.__json__())
 
     def version(self):

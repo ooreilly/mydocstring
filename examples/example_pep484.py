@@ -1,16 +1,16 @@
-def example_function(arg1, arg2=1):
+def example_function(arg1: int, arg2: int =1) -> bool:
     """
     This is an example of a docstring that conforms to the Google style guide. 
     The indentation uses four spaces (no tabs). Note that each section starts
     with a header such as `Arguments` or `Returns` and its contents is indented.
 
     Arguments:
-        arg1 (`int`): This description for this argument fits on one line.
-        arg2 (`int`, optional): This description is too long to fit on a
+        arg1: This description for this argument fits on one line.
+        arg2: This description is too long to fit on a
             single line. Note that it is continued by being indented. 
 
     Returns:
-        `bool` :  Stating the return type here is optional.
+        : Stating the return type here is optional.
 
         We can continue putting explanations in this section as long as the text
         is indented.
