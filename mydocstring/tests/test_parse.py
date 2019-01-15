@@ -195,6 +195,11 @@ def test_parse_cpp_pep484():
     args = parse.parse_signature(signature)
     assert 'example' in args['args']
 
+    signature = "(example: Example::ExampleOperator<int, int>," \
+                + "i: int, j: int, op_name: str='add')"
+    args = parse.parse_signature(signature)
+    assert 'example' in args['args']
+
 def test_parse_code():
     code = """
            Code block 1.

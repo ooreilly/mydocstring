@@ -6,6 +6,11 @@ subtract(arg0: int, arg1: int) -> int
 
        Some other explanation about the subtract function.
 
+subtract_expressive(arg0: operator.Operator, arg1: numpy.ndarray[float64[m, 1]]) -> List[List[int]]
+
+        Example of expressive type annontation.
+
+
 add_multiline(arg0: int,
               arg1: int) -> int
 
@@ -69,5 +74,6 @@ class  Operations
 
       Returns:
           int: If op_name=='add' it perform the sum param1+param2, otherwise 0.
+
 
 """

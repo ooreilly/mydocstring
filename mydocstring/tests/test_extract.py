@@ -88,6 +88,7 @@ def test_extract_pep484():
     assert 'Example of a function with a doc string.' in match['docstring']
     assert 'Some more' in match['docstring']
 
+
 def test_pybind_function():
     pybind = extract.PyBindExtract(open(example_pybind).read())
     match = pybind.extract('subtract')
@@ -101,6 +102,13 @@ def test_pybind_function():
     assert match['return_annotation'] == 'int'
     assert match['signature'] == '(arg0: int, arg1: int) -> int'
     assert 'Add two numbers' in match['docstring']
+
+    match = pybind.extract('subtract_expressive')
+    assert match['signature'] == '('\
+            'arg0: operator.Operator, '\
+            'arg1: numpy.ndarray[float64[m, 1]]) -> List[List[int]]'
+    assert match['return_annotation'] == 'List[List[int]]'
+    assert 'Example of expressive' in match['docstring']
 
 def test_pybind_function_cleaned():
     import inspect  
