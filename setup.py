@@ -1,7 +1,7 @@
 from setuptools import setup
  
 setup(name='mydocstring',
-      version='0.2.1',
+      version='0.2.2',
       description="""A tool for extracting and converting Google-style docstrings to
       plain-text, markdown, and JSON.""",
       url='http://github.com/ooreilly/mydocstring',
