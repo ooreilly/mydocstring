@@ -1,7 +1,7 @@
 
 # example_function
 ```python
-def example_function(arg1: int, arg2: int =1):
+def example_function(arg1: int, arg2: int =1) -> bool:
 ```
 
 ---
@@ -12,8 +12,8 @@ The indentation uses four spaces (no tabs). Note that each section starts
 with a header such as `Arguments` or `Returns` and its contents is indented.
 
 ## Arguments
-* **arg1** int : This description for this argument fits on one line.
-* **arg2** int =1 : This description is too long to fit on a
+* **arg1**  : This description for this argument fits on one line.
+* **arg2**  : This description is too long to fit on a
     single line. Note that it is continued by being indented. 
 
 ## Returns
@@ -51,7 +51,7 @@ Code block 2.
 
 ## Source
 ```python
-def example_function(arg1: int, arg2: int =1):bool
+def example_function(arg1: int, arg2: int =1) -> bool:bool
     if arg1 == arg2:
         raise ValueError("`arg1` and `arg2` cannot be equal.")
     if arg1 > arg2:

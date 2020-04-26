@@ -1,4 +1,4 @@
-example_function(arg1: int, arg2: int =1)
+example_function(arg1: int, arg2: int =1) -> bool
 
 This is an example of a docstring that conforms to the Google style guide. 
 The indentation uses four spaces (no tabs). Note that each section starts

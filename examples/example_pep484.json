@@ -9,12 +9,12 @@
             {
                 "description": "This description for this argument fits on one line.",
                 "field": "arg1",
-                "signature": "int"
+                "signature": ""
             },
             {
                 "description": "This description is too long to fit on a\n    single line. Note that it is continued by being indented. ",
                 "field": "arg2",
-                "signature": "int =1"
+                "signature": ""
             }
         ],
         "header": "Arguments",
@@ -25,7 +25,7 @@
             {
                 "description": "Stating the return type here is optional.",
                 "field": "",
-                "signature": "bool"
+                "signature": ""
             }
         ],
         "header": "Returns",

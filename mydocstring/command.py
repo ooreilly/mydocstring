@@ -48,9 +48,8 @@ class Command(object):
         else:
             self.name = options['<name>']
         self.docstring = extract.extract(self.filename, self.name)
-        self.parser = parse.parser(self.docstring['docstring'], 'Google',
-                      args=parse.parse_signature(self.docstring['signature']),
-                      returns=self.docstring['return_type'])
+
+        self.parser = parse.GoogleDocString(self.docstring['docstring']) 
 
         self.options = {'--text' : self.text,
                         '--markdown' : self.markdown,
