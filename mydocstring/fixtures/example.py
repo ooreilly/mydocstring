@@ -40,6 +40,11 @@ def function_with_docstring_pep484(arg0: int, arg1: bool = True) -> bool:
         multiple lines. It is important that this description is indented.
 
     """
+
+def function_with_docstring_objects_pep484(arg0: int, arg1: bool = True) -> obj.bool:
+    """
+    """
+
 def function_with_undefined_header():
     """
 

@@ -282,7 +282,7 @@ class PyExtract(Extract):
 
     def extract_function(self):
         pattern = (r'^\s*(%s)(\([\w\W]*?\)' % self.funcname +
-                   r'\s*(?:->\s*(\w+))?)%s\n+' % self.keywords['signature_end']
+                   r'\s*(?:->\s*([\w\W]+))?)%s\n+' % self.keywords['signature_end']
                    + r'(\s+)%s([\w\W]*)?%s\n((\4.*\n+)+)?' %
                    (self.keywords['docstring'], self.keywords['docstring']))
 

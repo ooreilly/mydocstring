@@ -88,6 +88,10 @@ def test_extract_pep484():
     assert 'Example of a function with a doc string.' in match['docstring']
     assert 'Some more' in match['docstring']
 
+    # Allow for nested.types in return type annotation
+    match = extract.extract(example, 'function_with_docstring_objects_pep484')
+    assert match['signature'] == '(arg0: int, arg1: bool = True) -> obj.bool'
+
 
 def test_pybind_function():
     pybind = extract.PyBindExtract(open(example_pybind).read())
