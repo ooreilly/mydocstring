@@ -45,14 +45,17 @@ def test_init():
     assert match['docstring']
     assert 'Some more' in match['docstring']
 
-def test_method():
-    match = extract.extract(example, 'ExampleOldClass.method_with_docstring')
-    assert match['function'] == 'method_with_docstring'
-    assert match['signature'] == '(self, arg1, arg2)'
-    assert match['type'] == 'method'
-    print(match)
-    print(match['docstring'])
-    assert 'Some more' in match['docstring']
+def test_methods():
+    classes = ['ExampleOldClass', 'ExampleOldClass'] 
+    methods = ['method_with_docstring', 'method_with_new_line_before_self']
+    signatures = ['(self, arg1, arg2)', '( self)']
+    text = ['Some more', 'with a new line']
+    for cl, mt, sig, txt in zip(classes, methods, signatures, text):
+        match = extract.extract(example, '%s.%s' % (cl, mt))
+        assert match['function'] == mt
+        assert match['signature'] == sig
+        assert match['type'] == 'method'
+        assert txt in match['docstring']
 
 def test_function_not_found():
     with pytest.raises(NameError):
@@ -75,6 +78,13 @@ def test_multiline_signature():
     example = 'fixtures/example.py'
     match = extract.extract(example, 'multiline')
     assert match['function'] == 'multiline'
+
+def test_multiline_signature_new_line_before_args():
+    example = 'fixtures/example.py'
+    match = extract.extract(example, 'multiline_new_line_before_args')
+    assert match['function'] == 'multiline_new_line_before_args'
+    args = match['parsed_signature']['args']
+    assert args['arg1'] == ''
 
 def test_extract_pep484():
     match = extract.extract(example, 'function_with_docstring_pep484')

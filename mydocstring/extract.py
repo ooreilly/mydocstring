@@ -304,7 +304,7 @@ class PyExtract(Extract):
 
     def extract_method(self):
         pattern = (r'class\s+(%s)\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
-                   r'[\n\s]+def\s+(%s)(\(self[\w\W]*?\)' % self.funcname +
+                   r'[\n\s]+def\s+(%s)(\(\s*self[\w\W]*?\)' % self.funcname +
                    r'\s*(?:->\s*(\w+))?)%s\n+' % self.keywords['signature_end']
                    + r'(\s+)"""([\w\W]*?)"""\n((?:\4.*\n+)+)?')
         ids = {

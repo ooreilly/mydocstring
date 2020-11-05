@@ -96,6 +96,21 @@ def multiline(arg1,
     """
     return arg1 + arg2 + arg3
 
+def multiline_new_line_before_args(
+              arg1,
+              arg2,
+              arg3):
+    """
+    A function with a signature that spans multiple lines, but with a line break before the first
+    argument.
+
+    Args:
+        arg1(int) : Integer to add.
+        arg2(int) : Integer to add.
+        arg3(int) : Integer to add.
+    """
+    return arg1 + arg2 + arg3
+
 class ExampleOldClass:
     """
     An example of a docstring for an old-style class.
@@ -142,6 +157,13 @@ class ExampleNewClass(object):
         Example of a docstring for the init function.
 
         Some more details.
+        """
+        pass
+    
+    def method_with_new_line_before_self(
+            self):
+        """
+        Method with a new line before `self`.
         """
         pass
 
