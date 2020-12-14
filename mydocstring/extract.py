@@ -304,7 +304,8 @@ class PyExtract(Extract):
                   #                     \n+                - one or more end line
                   #                        ((?:\4.*\n+)+)? - source code capture 
                    r'(\s+)%s([\w\W]*)?%s\n+((?:\4.*\n+)+)?' %
-                   (self.keywords['docstring'], self.keywords['docstring']))
+                   (self.keywords['docstring'],
+                   self.keywords['docstring']))
 
         ids = {
             'class': 100,
@@ -331,10 +332,10 @@ class PyExtract(Extract):
                     #                                       ([\w\W]*?)      - docstring capture
                     #                                                 %s    - """ pattern
                     #                                                    () - capture nothing
-        pattern = (r'^\s*class\s+(%s)()(\(\w*\))?:\n+(\s+)%s([\w\W]*?)%s()' %
-                   (self.classname,
-                   self.keywords['docstring'],
-                   self.keywords['docstring'],))
+        pattern = (r'^\s*class\s+(%s)()(\(\w*\))?:\n+(\s+)%s([\w\W]*?)%s()' % (
+            self.classname,
+            self.keywords['docstring'],
+            self.keywords['docstring']))
         return self.find(pattern)
 
     def extract_method(self):
@@ -389,8 +390,9 @@ class PyExtract(Extract):
                   #         ^%s               - starts with """
                   #            ([\w\W]*?)     - capture the docstring non greedy
                   #                      %s   - """ pattern
-        pattern = r'()()()()^%s([\w\W]*?)%s' %
-                  (self.keywords['docstring'], self.keywords['docstring'])
+        pattern = (r'()()()()^%s([\w\W]*?)%s' % (
+            self.keywords['docstring'],
+            self.keywords['docstring']))
         return self.find(pattern)
 
 
