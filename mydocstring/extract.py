@@ -382,13 +382,13 @@ class PyExtract(Extract):
         return self.find(pattern, ids)
 
     def extract_module(self):
-                  # ()                         - capture nothing
-                  #   ()                       - capture nothing
-                  #     ()                     - capture nothing
-                  #       ()                   - capture nothing
-                  #         ^%s                - starts with """
-                  #            ([\w\W]*?)      - capture the docstring non greedy
-                  #                      %s    - """ pattern
+                  # ()                        - capture nothing
+                  #   ()                      - capture nothing
+                  #     ()                    - capture nothing
+                  #       ()                  - capture nothing
+                  #         ^%s               - starts with """
+                  #            ([\w\W]*?)     - capture the docstring non greedy
+                  #                      %s   - """ pattern
         pattern = r'()()()()^%s([\w\W]*?)%s' %
                   (self.keywords['docstring'], self.keywords['docstring'])
         return self.find(pattern)
