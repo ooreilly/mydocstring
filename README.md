@@ -1,5 +1,5 @@
 # MyDocstring
-[MyDocstring](README.md) is a small Python package that allows you to extract and parse docstrings. It suited for building your own documentation system. Docstrings can be displayed as either plain-text, [Markdown](http://commonmark.org/), or [JSON](https://www.json.org/) data.
+[MyDocstring](README.md) is a small Python package that allows you to extract and parse docstrings. It is suited for building your own documentation system. Docstrings can be displayed as either plain-text, [Markdown](http://commonmark.org/), or [JSON](https://www.json.org/) data.
 
 * Supports [Python PEP484 type hints](https://www.python.org/dev/peps/pep-0484/).
 * Supports [pybind11](https://github.com/pybind/pybind11) docstrings.
