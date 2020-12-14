@@ -281,9 +281,29 @@ class PyExtract(Extract):
     """
 
     def extract_function(self):
+                  #  ^\s*                         - start with zero or more spaces
+                  #      (%s)                     - capture name of function
+                  #          (                    - start of capture
+                  #           \([\w\W]*?\)        - the arguments
         pattern = (r'^\s*(%s)(\([\w\W]*?\)' % self.funcname +
-                   r'\s*(?:->\s*([\w\W]+))?)%s\n+' % self.keywords['signature_end']
-                   + r'(\s+)%s([\w\W]*)?%s\n((\4.*\n+)+)?' %
+                  #  \s*                          - zero or more spaces
+                  #     (?:                       - start non capturing parantesis
+                  #        ->                     - -> pattern
+                  #          \s*                  - zero of more spaces
+                  #             ([\w\W]+)         - capture return attribute 
+                  #                      )        - end non capturing parantesis
+                  #                       ?       - zero or one return attribute 
+                  #                        )      - end of capture
+                  #                         %s    - : pattern
+                  #                           \n+ - one or more end line 
+                   r'\s*(?:->\s*([\w\W]+))?)%s\n+' % self.keywords['signature_end'] +
+                  #  (\s+)                                 - number of indents for docstring
+                  #       %s                               - """ pattern
+                  #         ([\w\W]*?)                     - capture the doctring
+                  #                   %s                   - """ pattern
+                  #                     \n+                - one or more end line
+                  #                        ((?:\4.*\n+)+)? - source code capture 
+                   r'(\s+)%s([\w\W]*)?%s\n+((?:\4.*\n+)+)?' %
                    (self.keywords['docstring'], self.keywords['docstring']))
 
         ids = {
@@ -298,15 +318,58 @@ class PyExtract(Extract):
         return self.findall(pattern, ids)
 
     def extract_class(self):
-        pattern = (r'^\s*class\s+(%s)()(\(\w*\))?:\n(\s+)"""([\w\W]*?)"""()' %
-                   self.classname)
+                    #^\s*                                                   - starts with zero or more space
+                    #    class                                              - class pattern
+                    #         \s+                                           - one or more space
+                    #            (%s)                                       - capture classs name
+                    #                ()                                     - capture nothing
+                    #                  (\(\w*\))?                           - everything in ()
+                    #                            :                          - : pattern
+                    #                             \n+                       - one or more endline
+                    #                                (\s+)                  - capture indents
+                    #                                     %s                - """ pattern
+                    #                                       ([\w\W]*?)      - docstring capture
+                    #                                                 %s    - """ pattern
+                    #                                                    () - capture nothing
+        pattern = (r'^\s*class\s+(%s)()(\(\w*\))?:\n+(\s+)%s([\w\W]*?)%s()' %
+                   (self.classname,
+                   self.keywords['docstring'],
+                   self.keywords['docstring'],))
         return self.find(pattern)
 
     def extract_method(self):
+                  #  class                                  - class pattern
+                  #       \s+                               - one or more space
+                  #          (%s)                           - capture classname
+                  #              \(?\w*\)?                  - everything in ()
+                  #                       :                 - : pattern
+                  #                        [\n\s]+          - one or more endline or space
+                  #                               [\w\W]*?  - everything non greedy
         pattern = (r'class\s+(%s)\(?\w*\)?:[\n\s]+[\w\W]*?' % self.classname +
+                  #  [\n\s]+                                - one or more, endline or space
+                  #         def                             - def pattern
+                  #            \s+                          - one or more space
+                  #               (%s)                      - capture function name
+                  #                   (\(\s*self[\w\W]*?\)  - everything in (self)
                    r'[\n\s]+def\s+(%s)(\(\s*self[\w\W]*?\)' % self.funcname +
-                   r'\s*(?:->\s*(\w+))?)%s\n+' % self.keywords['signature_end']
-                   + r'(\s+)"""([\w\W]*?)"""\n((?:\4.*\n+)+)?')
+                  #  \s*                                    - zero or more space
+                  #     (?:                                 - non capture start
+                  #        ->                               - -> pattern
+                  #          \s*                            - zero or more space
+                  #             ([\w\W]+)                   - capture the annotation
+                  #                      )                  - non capture end
+                  #                       ?)                - zero or one previous pattern
+                  #                         %s              - : pattern
+                  #                           \n+           - one or more end line
+                   r'\s*(?:->\s*([\w\W]+))?)%s\n+' % self.keywords['signature_end'] +
+                  #  (\s+)                                 - number of indents for docstring
+                  #       %s                               - """ pattern
+                  #         ([\w\W]*?)                     - capture the doctring
+                  #                   %s                   - """ pattern
+                  #                     \n+                - one or more end line
+                  #                        ((?:\4.*\n+)+)? - indent and code 
+                   r'(\s+)%s([\w\W]*?)%s\n+((?:\4.*\n+)+)?' %
+                   (self.keywords['docstring'], self.keywords['docstring']))
         ids = {
             'class': 0,
             'function': 1,
@@ -319,7 +382,15 @@ class PyExtract(Extract):
         return self.find(pattern, ids)
 
     def extract_module(self):
-        pattern = r'()()()()^"""([\w\W]*?)"""'
+                  # ()                         - capture nothing
+                  #   ()                       - capture nothing
+                  #     ()                     - capture nothing
+                  #       ()                   - capture nothing
+                  #         ^%s                - starts with """
+                  #            ([\w\W]*?)      - capture the docstring non greedy
+                  #                      %s    - """ pattern
+        pattern = r'()()()()^%s([\w\W]*?)%s' %
+                  (self.keywords['docstring'], self.keywords['docstring'])
         return self.find(pattern)
 
 
