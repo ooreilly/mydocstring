@@ -559,7 +559,7 @@ def parse_signature(args, return_annotation='__return_annotation'):
 
         """
 
-    match = re.findall('\(([\w\W]*?)\)\s*(?:->\s*(\w+))?', args)
+    match = re.findall(r'\(([\w\W]*?)\)\s*(?:->\s*(\w+))?', args)
     if not match:
         raise ValueError('The string `%s` is not a signature.' % args)
     match = match[0]
@@ -695,7 +695,7 @@ def mark_code_blocks(txt, keyword='>>>', split='\n', tag="```", lang='python'):
 
     for block in blocks:
         lines = block.split(keyword)
-        match = re.findall('(\s*)(%s[\w\W]+)' % keyword,
+        match = re.findall(r'(\s*)(%s[\w\W]+)' % keyword,
                            keyword.join(lines[1:]), re.M)
         if match:
             before_code = lines[0]
