@@ -411,7 +411,7 @@ class PyBindExtract(PyExtract):
             'docstring': '',
             'self': 'self',
             'signature_end': '',
-            'token_split': '^\s*\d+\.'
+            'token_split': r'^\s*\d+\.'
         }
         self.split = 1
 

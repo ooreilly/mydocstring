@@ -42,9 +42,9 @@ class DocString(object):
 
     Attributes:
         delimiter: A string that is used to identify a section and is placed
-            after the section name (e.g., `Arguments:`). Defaults to `': '`.
+            after the section name (e.g., `Arguments:`). Defaults to `':'`.
         arg_delimiter: A string that specifies how to separate arguments in a
-            argument list. Defaults to `':'`.
+            argument list. Defaults to `': '`.
         indent: An int that specifies the minimum number of spaces to use for
             indentation. Defaults to `4`.
         code: Convert code blocks to Markdown. Defaults to `'python'`. Use
@@ -434,14 +434,29 @@ class GoogleDocString(DocString):
         }
 
     def _compile_header(self):
+                          # ^\s*          - starts with zero or more spaces
+                          #     (%s)      - captures headers
+                          #         %s    - the delimiter pattern
+                          #           \s* - zero or more spaces
         return re.compile(r'^\s*(%s)%s\s*' % (self._config['headers'],
                                               self._config['delimiter']))
 
     def _compile_indent(self):
+                          # (          - capture starts
+                          #  ^\s       - starts with a space
+                          #     {%s,}  - specifies that there should be indent number to infinity of previous pattern
+                          #          ) - end of capture
         return re.compile(r'(^\s{%s,})' % self._config['indent'])
 
     def _compile_arg(self):
         return re.compile(
+            # (\w*)                      - capture zero of more characters
+            #      \s*                   - zero or more spaces
+            #         (\(.*\))           - capture everything inside ()
+            #                 ?          - zero or one
+            #                  \s*       - zero or more spaces
+            #                     %s     - arg_delimiter pattern
+            #                       (.*) - capture everything there is
             r'(\w*)\s*(\(.*\))?\s*%s(.*)' % self._config['arg_delimiter'])
 
     def _err_if_missing_indent(self, lines, linenumber):
@@ -558,8 +573,17 @@ def parse_signature(args, return_annotation='__return_annotation'):
 
 
         """
-
-    match = re.findall('\(([\w\W]*?)\)\s*(?:->\s*(\w+))?', args)
+                       # \(                               - ( pattern
+                       #   ([\w\W]*?)                     - captures characters and special characters
+                       #             \)                   - ) pattern
+                       #               \s*                - zero or more spaces
+                       #                  (?:             - non capture block starts
+                       #                     ->           - -> pattern
+                       #                       \s*        - zero or more spaces
+                       #                          (\w+)   - captures characters
+                       #                               )  - non capture block ends
+                       #                                ? - zero or one previous pattern
+    match = re.findall(r'\(([\w\W]*?)\)\s*(?:->\s*(\w+))?', args)
     if not match:
         raise ValueError('The string `%s` is not a signature.' % args)
     match = match[0]
@@ -695,7 +719,11 @@ def mark_code_blocks(txt, keyword='>>>', split='\n', tag="```", lang='python'):
 
     for block in blocks:
         lines = block.split(keyword)
-        match = re.findall('(\s*)(%s[\w\W]+)' % keyword,
+                           # (\s*)            - capture the spaces
+                           #      (%s         - start capture >>>lines
+                           #         [\w\W]+  - one or more characters and special characters
+                           #                ) - end capture
+        match = re.findall(r'(\s*)(%s[\w\W]+)' % keyword,
                            keyword.join(lines[1:]), re.M)
         if match:
             before_code = lines[0]
