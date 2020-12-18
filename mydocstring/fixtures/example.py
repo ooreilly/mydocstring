@@ -96,6 +96,23 @@ def multiline(arg1,
     """
     return arg1 + arg2 + arg3
 
+
+def function_with_code_block(arg):
+    """
+    A docstring with a code block that contains a dictionary.
+
+    Examples:
+        ```python
+        a = {
+            'a': 1,
+            'b': 1,
+            'c': 1,
+        }
+        ```
+    """
+    return arg
+
+
 def multiline_new_line_before_args(
               arg1,
               arg2,
@@ -110,6 +127,7 @@ def multiline_new_line_before_args(
         arg3(int) : Integer to add.
     """
     return arg1 + arg2 + arg3
+
 
 class ExampleOldClass:
     """

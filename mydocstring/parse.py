@@ -96,6 +96,7 @@ class DocString(object):
         default_config['warn_if_no_arg_doc'] = True
         default_config['exclude_warn_if_no_arg_doc'] = ['self']
         default_config['code'] = 'python'
+        default_config['code_block_delimiter'] = '```'
         default_config['warn_if_undefined_header'] = True
         default_config['ignore_args_for_undefined_headers'] = True
 
@@ -352,6 +353,18 @@ class GoogleDocString(DocString):
         args = []
         while self._parsing['linenum'] < len(lines):
 
+            linenum = self._parsing['linenum']
+
+            # Disable parsing inside code blocks
+            if self._config['code_block_delimiter'] in lines[linenum]:
+                code = self._parse_code_block(lines, 
+                                              start=linenum,
+                                              code_block_delimiter=
+                                              self._config['code_block_delimiter'])
+                text += code
+                self._parsing['linenum'] += len(code)
+                continue
+
             arg_data = self._parse_arglist(lines)
             if not header and arg_data and                                    \
             self._config['warn_if_undefined_header']:
@@ -432,6 +445,36 @@ class GoogleDocString(DocString):
             'signature': arg_data[0][1],
             'description': '\n'.join(description)
         }
+
+    def _parse_code_block(self, lines, start=0, code_block_delimiter="```"):
+        """
+        Find all lines of text that starts with ``` and ends with ```.
+
+        Args:
+            lines: List of lines to parse
+            start(optional): Line number to start parsing at.
+            code_block_delimiter(optional): The type of code block delimiter to use (e.g., ```)
+
+        """
+        code_block = []
+        start_block = True
+        end_block = False
+        linenum = self._parsing['linenum']
+
+        # Go over each line starting at the beginning of the code block (``` ... )
+        for line in lines[linenum:]:
+            code_block.append(line)
+            if code_block_delimiter in line:
+                if start_block:
+                    start_block = False
+                else:
+                    end_block = True
+                    break
+
+        if not end_block:
+            raise ValueError('Failed to parse code block. Missing closure?')
+
+        return code_block
 
     def _compile_header(self):
                           # ^\s*          - starts with zero or more spaces

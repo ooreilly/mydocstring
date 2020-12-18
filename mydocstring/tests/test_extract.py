@@ -8,7 +8,7 @@ def test_get_names():
     extract.get_names('test') == ('', 'test', 'function')
     extract.get_names('Test') == ('Test', '', 'class')
     extract.get_names('Test.test') == ('Test', 'test', 'method')
-    extract.get_names('') == ('', '', 'module')
+    extract.get_names('.') == ('', '', 'module')
 
 def test_function():
     match = extract.extract(example, 'function_with_docstring')

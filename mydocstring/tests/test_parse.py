@@ -220,6 +220,17 @@ def test_parse_code():
     assert '```python\n\n           >>> a\n' in formatted_code
     assert '```python\n\n           >>> b\n' in formatted_code
 
+def test_args_in_code_block():
+    # Check that argument lists inside code blocks are not parsed
+    google = setup_google(function='function_with_code_block')
+    text = google.parse()[1]['text']
+    assert "a = {" in text
+    assert "'a': 1," in text
+    assert "'b': 1," in text
+    assert "'c': 1," in text
+    assert "}" in text
+
+
 def test_undefined_headers():
     example = 'fixtures/example.py'
     match = extract(example, 'function_with_undefined_header')
